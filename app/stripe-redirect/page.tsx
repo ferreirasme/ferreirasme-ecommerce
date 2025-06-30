@@ -1,13 +1,13 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2 } from "lucide-react"
 
-export default function StripeRedirectPage() {
+function StripeRedirectContent() {
   const searchParams = useSearchParams()
-  const sessionId = searchParams.get('session_id')
+  const sessionId = searchParams?.get('session_id') || null
 
   useEffect(() => {
     if (sessionId) {
@@ -41,5 +41,24 @@ export default function StripeRedirectPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function StripeRedirectPage() {
+  return (
+    <Suspense fallback={
+      <div className="container py-8 flex items-center justify-center min-h-[60vh]">
+        <Card className="max-w-md w-full">
+          <CardHeader>
+            <CardTitle className="text-center">Carregando...</CardTitle>
+          </CardHeader>
+          <CardContent className="flex justify-center">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </CardContent>
+        </Card>
+      </div>
+    }>
+      <StripeRedirectContent />
+    </Suspense>
   )
 }
