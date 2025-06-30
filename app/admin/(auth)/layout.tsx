@@ -4,6 +4,9 @@ import { getAdmin } from "@/lib/auth-admin"
 import { AdminSidebar } from "@/components/admin/AdminSidebar"
 import { AdminHeader } from "@/components/admin/AdminHeader"
 
+// Forçar todas as rotas admin a serem dinâmicas
+export const dynamic = 'force-dynamic'
+
 export default async function AdminAuthLayout({
   children,
 }: {
