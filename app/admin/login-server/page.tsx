@@ -39,10 +39,17 @@ async function login(formData: FormData) {
     redirect('/admin/dashboard')
   }
 
-  return error.message
+  // Server actions não podem retornar valores, só redirecionar
+  if (error) {
+    redirect(`/admin/login-server?error=${encodeURIComponent(error.message)}`)
+  }
 }
 
-export default function ServerLoginPage() {
+export default function ServerLoginPage({ 
+  searchParams 
+}: { 
+  searchParams: { error?: string } 
+}) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow">
@@ -52,6 +59,12 @@ export default function ServerLoginPage() {
             Versão server-side
           </p>
         </div>
+        
+        {searchParams.error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            <p className="text-sm">{searchParams.error}</p>
+          </div>
+        )}
         
         <form className="mt-8 space-y-6" action={login}>
           <div className="space-y-4">
