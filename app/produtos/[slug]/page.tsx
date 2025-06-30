@@ -35,7 +35,7 @@ interface Product {
 
 export default function ProductDetailPage() {
   const params = useParams()
-  const slug = params.slug as string
+  const slug = params?.slug as string
   const addToCart = useCartStore((state) => state.addItem)
   
   const [product, setProduct] = useState<Product | null>(null)
