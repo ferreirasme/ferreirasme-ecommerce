@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
+import { OTPInput } from "@/components/ui/otp-input"
 import { toast } from "sonner"
 import { ArrowLeft, Mail } from "lucide-react"
 
@@ -117,20 +118,15 @@ export default function LoginPage() {
             </form>
           ) : (
             <form onSubmit={handleVerifyOTP} className="space-y-4">
-              <div className="space-y-2">
+              <div className="space-y-4">
                 <Label htmlFor="otp">Código de verificação</Label>
-                <Input
-                  id="otp"
-                  type="text"
-                  placeholder="000000"
+                <OTPInput
                   value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  maxLength={6}
-                  className="text-center text-2xl tracking-widest"
-                  required
+                  onChange={setOtp}
+                  length={8}
                 />
-                <p className="text-sm text-muted-foreground">
-                  Enviamos um código para {email}
+                <p className="text-sm text-muted-foreground text-center">
+                  Enviamos um código de 8 caracteres para {email}
                 </p>
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
