@@ -3,8 +3,40 @@ import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
 
 export async function middleware(request: NextRequest) {
   const response = NextResponse.next()
-  const supabase = createMiddlewareClient({ req: request, res: response })
+  const pathname = request.nextUrl.pathname
 
+  // Public routes that should bypass authentication
+  const publicRoutes = [
+    '/admin/login',
+    '/admin/login-simple',
+    '/admin/test-auth',
+    '/consultant/login',
+    '/login',
+    '/register',
+    '/forgot-password',
+    '/reset-password',
+    '/first-access',
+    '/',
+    '/produtos',
+    '/categorias',
+    '/sobre',
+    '/contato'
+  ]
+
+  // Check if it's a public route first - BEFORE any auth checks
+  const isPublicRoute = publicRoutes.some(route => 
+    pathname === route || pathname.startsWith(route + '/')
+  )
+  
+  // If it's a public route, skip ALL authentication checks
+  if (isPublicRoute) {
+    // Don't create supabase client or check session for public routes
+    return addSecurityHeaders(response, null)
+  }
+
+  // Only create supabase client and check session for protected routes
+  const supabase = createMiddlewareClient({ req: request, res: response })
+  
   // Refresh session if expired - this extends the session automatically
   const { data: { session }, error } = await supabase.auth.getSession()
 
@@ -16,8 +48,7 @@ export async function middleware(request: NextRequest) {
     '/checkout': ['admin', 'manager', 'consultant', 'customer'],
   }
 
-  // Check if the current path requires authentication
-  const pathname = request.nextUrl.pathname
+  // Check if route requires authentication
   const requiresAuth = Object.keys(protectedRoutes).some(route => 
     pathname.startsWith(route)
   )
@@ -26,8 +57,19 @@ export async function middleware(request: NextRequest) {
   if (requiresAuth) {
     if (!session) {
       // No session, redirect to appropriate login page
-      const isConsultantRoute = pathname.startsWith('/consultant')
-      const loginUrl = isConsultantRoute ? '/consultant/login' : '/login'
+      let loginUrl = '/login'
+      
+      if (pathname.startsWith('/admin')) {
+        loginUrl = '/admin/login'
+      } else if (pathname.startsWith('/consultant')) {
+        loginUrl = '/consultant/login'
+      }
+      
+      // Prevent redirect loops - don't redirect if already on login page
+      if (pathname === loginUrl) {
+        return addSecurityHeaders(response, null)
+      }
+      
       const redirectUrl = new URL(loginUrl, request.url)
       redirectUrl.searchParams.set('redirect', pathname)
       return NextResponse.redirect(redirectUrl)
@@ -41,7 +83,7 @@ export async function middleware(request: NextRequest) {
         .eq('id', session.user.id)
         .single()
 
-      // Redirect to first access page if needed
+      // Redirect to first access page if needed (unless already there)
       if (profile?.metadata?.first_login === true && pathname !== '/first-access') {
         return NextResponse.redirect(new URL('/first-access', request.url))
       }
@@ -89,6 +131,11 @@ export async function middleware(request: NextRequest) {
   }
 
   // Add security headers
+  return addSecurityHeaders(response, session)
+}
+
+// Helper function to add security headers
+function addSecurityHeaders(response: NextResponse, session: any) {
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
   
   // CSP header with comprehensive security policies
@@ -133,7 +180,8 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public folder
-     * - api routes (handled separately)
+     * - api/webhooks (webhook routes that don't need auth)
+     * But DO include other api routes for auth checks
      */
     '/((?!_next/static|_next/image|favicon.ico|public|api/webhooks).*)',
   ],
