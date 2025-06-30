@@ -48,17 +48,28 @@ export async function POST(request: NextRequest) {
 
     // Criar itens de linha para o Stripe
     const lineItems = [
-      ...items.map((item: any) => ({
-        price_data: {
-          currency: 'eur',
-          product_data: {
-            name: item.name,
-            images: item.image_url ? [item.image_url] : [],
+      ...items.map((item: any) => {
+        console.log('Processing item:', item)
+        
+        // Garantir que a URL da imagem seja absoluta
+        const imageUrl = item.image_url?.startsWith('http') 
+          ? item.image_url 
+          : item.image_url 
+            ? `${process.env.NEXT_PUBLIC_URL}${item.image_url}`
+            : undefined
+            
+        return {
+          price_data: {
+            currency: 'eur',
+            product_data: {
+              name: item.name,
+              images: imageUrl ? [imageUrl] : [],
+            },
+            unit_amount: Math.round(item.price * 100), // Converter para centavos
           },
-          unit_amount: Math.round(item.price * 100), // Converter para centavos
-        },
-        quantity: item.quantity,
-      })),
+          quantity: item.quantity,
+        }
+      }),
     ]
 
     // Adicionar frete se aplicável
@@ -75,18 +86,34 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    console.log('Creating checkout session with:', {
+      itemsCount: lineItems.length,
+      customer: customer.id,
+      total: subtotal + (shipping / 100)
+    })
+
     // Criar sessão de checkout
-    const session = await stripe.checkout.sessions.create({
+    const sessionConfig: any = {
       payment_method_types: ['card'],
       customer: customer.id,
       line_items: lineItems,
       mode: 'payment',
       success_url: `${process.env.NEXT_PUBLIC_URL}/checkout/sucesso?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_URL}/checkout`,
-      metadata: {
-        customerInfo: JSON.stringify(customerInfo),
+      shipping_address_collection: {
+        allowed_countries: ['PT'], // Apenas Portugal
       },
-    })
+      metadata: {
+        // Limitar tamanho dos metadados (máximo 500 caracteres por chave)
+        customer_email: customerInfo.email,
+        customer_name: `${customerInfo.firstName} ${customerInfo.lastName}`,
+        shipping_city: customerInfo.city,
+      },
+    }
+
+    console.log('Session config:', JSON.stringify(sessionConfig, null, 2))
+    
+    const session = await stripe.checkout.sessions.create(sessionConfig)
 
     return NextResponse.json({ sessionId: session.id })
   } catch (error: any) {
