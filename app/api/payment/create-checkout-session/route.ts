@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { items, customerInfo } = body
 
-    console.log('Checkout request received:', { items, customerInfo })
+    console.log('Checkout request received:', JSON.stringify({ items, customerInfo }, null, 2))
 
     // Verificar se temos itens
     if (!items || items.length === 0) {
@@ -26,25 +26,47 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Validar dados do cliente
+    if (!customerInfo.email || !customerInfo.firstName || !customerInfo.lastName) {
+      return NextResponse.json(
+        { error: 'Dados do cliente incompletos' },
+        { status: 400 }
+      )
+    }
+
     // Criar ou obter cliente no Stripe
-    const customer = await stripe.customers.create({
+    const customerData = {
       email: customerInfo.email,
-      name: `${customerInfo.firstName} ${customerInfo.lastName}`,
-      phone: customerInfo.phone,
-      address: {
+      name: `${customerInfo.firstName} ${customerInfo.lastName}`.trim(),
+      phone: customerInfo.phone || undefined,
+      address: customerInfo.address ? {
         line1: customerInfo.address,
         line2: customerInfo.addressComplement || undefined,
-        city: customerInfo.city,
-        postal_code: customerInfo.postalCode,
+        city: customerInfo.city || 'Lisboa',
+        postal_code: customerInfo.postalCode || '1000-000',
         country: 'PT', // Portugal
-      },
-    })
+      } : undefined,
+    }
+
+    console.log('Creating customer with:', JSON.stringify(customerData, null, 2))
+    const customer = await stripe.customers.create(customerData)
 
     // Calcular valores
     const subtotal = items.reduce((sum: number, item: any) => 
       sum + (item.price * item.quantity), 0
     )
     const shipping = subtotal > 50 ? 0 : 599 // Em centavos
+
+    // Validar items
+    for (const item of items) {
+      if (!item.name || typeof item.price !== 'number' || !item.quantity) {
+        console.error('Item inválido:', item)
+        return NextResponse.json(
+          { error: `Item inválido: ${JSON.stringify(item)}` },
+          { status: 400 }
+        )
+      }
+    }
 
     // Criar itens de linha para o Stripe
     const lineItems = [
@@ -62,12 +84,12 @@ export async function POST(request: NextRequest) {
           price_data: {
             currency: 'eur',
             product_data: {
-              name: item.name,
+              name: String(item.name || 'Produto'),
               images: imageUrl ? [imageUrl] : [],
             },
-            unit_amount: Math.round(item.price * 100), // Converter para centavos
+            unit_amount: Math.max(50, Math.round((item.price || 0) * 100)), // Mínimo 50 centavos
           },
-          quantity: item.quantity,
+          quantity: parseInt(item.quantity) || 1,
         }
       }),
     ]
@@ -100,14 +122,11 @@ export async function POST(request: NextRequest) {
       mode: 'payment',
       success_url: `${process.env.NEXT_PUBLIC_URL}/checkout/sucesso?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_URL}/checkout`,
-      shipping_address_collection: {
-        allowed_countries: ['PT'], // Apenas Portugal
-      },
       metadata: {
         // Limitar tamanho dos metadados (máximo 500 caracteres por chave)
         customer_email: customerInfo.email,
         customer_name: `${customerInfo.firstName} ${customerInfo.lastName}`,
-        shipping_city: customerInfo.city,
+        shipping_city: customerInfo.city || 'Lisboa',
       },
     }
 
