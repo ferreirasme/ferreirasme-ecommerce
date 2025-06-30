@@ -36,6 +36,7 @@ export function PostalCodeInput({
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState<"idle" | "valid" | "invalid">("idle")
   const [errorMessage, setErrorMessage] = useState("")
+  const [lastValidatedCode, setLastValidatedCode] = useState("")
 
   const formatPostalCode = (input: string) => {
     // Remove tudo que não é número
@@ -58,11 +59,21 @@ export function PostalCodeInput({
 
   // Validar código postal quando estiver completo
   useEffect(() => {
-    const validatePostalCode = async () => {
-      if (value.length !== 8) {
-        return
+    // Se não tiver 8 caracteres, resetar status
+    if (value.length !== 8) {
+      if (status !== "idle") {
+        setStatus("idle")
+        setErrorMessage("")
       }
+      return
+    }
 
+    // Se já validamos este código, não validar novamente
+    if (value === lastValidatedCode) {
+      return
+    }
+
+    const validatePostalCode = async () => {
       setLoading(true)
       setStatus("idle")
       setErrorMessage("")
@@ -70,6 +81,8 @@ export function PostalCodeInput({
       try {
         const response = await fetch(`/api/postal-code/validate?code=${value}`)
         const data = await response.json()
+
+        setLastValidatedCode(value) // Marcar como validado
 
         if (response.ok && data.valid) {
           setStatus("valid")
@@ -100,7 +113,7 @@ export function PostalCodeInput({
     }, 500)
 
     return () => clearTimeout(timer)
-  }, [value, onAddressFound])
+  }, [value, lastValidatedCode, status]) // Dependências controladas
 
   const getIcon = () => {
     if (loading) {
