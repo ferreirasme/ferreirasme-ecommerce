@@ -110,19 +110,7 @@ export async function POST(request: NextRequest) {
       }),
     ]
 
-    // Adicionar frete se aplicável
-    if (shipping > 0) {
-      lineItems.push({
-        price_data: {
-          currency: 'eur',
-          product_data: {
-            name: 'Envio',
-          },
-          unit_amount: shipping,
-        },
-        quantity: 1,
-      })
-    }
+    // Frete agora é tratado via shipping_options, não mais como line item
 
     console.log('Creating checkout session with:', {
       itemsCount: lineItems.length,
@@ -157,16 +145,50 @@ export async function POST(request: NextRequest) {
       success_url: `${baseUrl}/checkout/sucesso?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/checkout`,
       locale: 'pt', // Português para interface do Stripe Checkout
-      // Informações de envio
-      shipping_address_collection: {
-        allowed_countries: ['PT'], // Portugal
+      // Pré-preencher informações do cliente
+      customer_email: customerInfo.email,
+      // Configurações de pagamento
+      payment_intent_data: {
+        metadata: {
+          order_shipping_address: `${customerInfo.address}, ${customerInfo.city}, ${customerInfo.postalCode}`,
+          order_customer_phone: customerInfo.phone,
+        },
       },
+      // Pré-preencher endereço de cobrança
+      billing_address_collection: 'auto',
+      // Informações de envio para o pedido
+      shipping_options: [
+        {
+          shipping_rate_data: {
+            type: 'fixed_amount',
+            fixed_amount: {
+              amount: shipping,
+              currency: 'eur',
+            },
+            display_name: shipping === 0 ? 'Envio Grátis' : 'Envio CTT',
+            delivery_estimate: {
+              minimum: {
+                unit: 'business_day',
+                value: 2,
+              },
+              maximum: {
+                unit: 'business_day',
+                value: 5,
+              },
+            },
+          },
+        },
+      ],
       metadata: {
         // Limitar tamanho dos metadados (máximo 500 caracteres por chave)
         // Remover caracteres especiais que podem causar problemas
         customer_email: customerInfo.email,
         customer_name: `${customerInfo.firstName} ${customerInfo.lastName}`.replace(/[^\w\s-]/g, ''),
         shipping_city: (customerInfo.city || 'Lisboa').replace(/[^\w\s-]/g, ''),
+        // Adicionar endereço completo nos metadados
+        shipping_address: customerInfo.address?.replace(/[^\w\s-,]/g, ''),
+        shipping_postal_code: customerInfo.postalCode,
+        phone: customerInfo.phone,
       },
     }
 
