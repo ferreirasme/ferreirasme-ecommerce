@@ -15,6 +15,8 @@ import { ArrowLeft, CreditCard, Truck, ShieldCheck } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { toast } from "sonner"
+import { stripePromise } from "@/lib/stripe/client"
+import { MBWayDialog } from "@/components/checkout/mbway-dialog"
 
 interface CheckoutForm {
   // Dados pessoais
@@ -40,6 +42,7 @@ export default function CheckoutPage() {
   const user = useAuthStore((state) => state.user)
   
   const [loading, setLoading] = useState(false)
+  const [mbwayDialogOpen, setMbwayDialogOpen] = useState(false)
   const [formData, setFormData] = useState<CheckoutForm>({
     email: user?.email || "",
     firstName: "",
@@ -68,22 +71,123 @@ export default function CheckoutPage() {
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
+  const handleMBWayConfirm = async (phoneNumber: string) => {
+    setMbwayDialogOpen(false)
+    setLoading(true)
+
+    try {
+      const response = await fetch('/api/payment/create-mbway-payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          items: items.map(item => ({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            image_url: item.image_url,
+          })),
+          customerInfo: formData,
+          phoneNumber: phoneNumber,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Erro ao processar pagamento MB Way')
+      }
+
+      const data = await response.json()
+      
+      // Limpar carrinho
+      clearCart()
+      
+      // Redirecionar para página de sucesso com informações do MB Way
+      toast.success(data.mbway.message)
+      router.push(`/checkout/sucesso?orderId=${data.orderId}&method=mbway`)
+    } catch (error) {
+      console.error('Erro no MB Way:', error)
+      toast.error("Erro ao processar pagamento MB Way. Tente novamente.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
 
     try {
-      // Aqui seria a integração com o gateway de pagamento
-      // Por agora, vamos simular um processamento
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      // Limpar carrinho
-      clearCart()
-      
-      // Redirecionar para página de sucesso
-      toast.success("Pedido realizado com sucesso!")
-      router.push("/checkout/sucesso")
+      if (formData.paymentMethod === 'card') {
+        // Processar pagamento com Stripe
+        const response = await fetch('/api/payment/create-checkout-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            items: items.map(item => ({
+              id: item.id,
+              name: item.name,
+              price: item.price,
+              quantity: item.quantity,
+              image_url: item.image_url,
+            })),
+            customerInfo: formData,
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error('Erro ao criar sessão de pagamento')
+        }
+
+        const { sessionId } = await response.json()
+        
+        // Redirecionar para o Stripe Checkout
+        const stripe = await stripePromise
+        if (!stripe) {
+          throw new Error('Stripe não carregado')
+        }
+        
+        const { error } = await stripe.redirectToCheckout({ sessionId })
+        
+        if (error) {
+          throw error
+        }
+      } else if (formData.paymentMethod === 'mbway') {
+        // Abrir diálogo do MB Way
+        setMbwayDialogOpen(true)
+        setLoading(false)
+        return
+      } else if (formData.paymentMethod === 'transfer') {
+        // Para transferência bancária, apenas criar o pedido
+        const response = await fetch('/api/orders', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            items: items,
+            customerInfo: formData,
+            paymentMethod: 'transfer',
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error('Erro ao criar pedido')
+        }
+
+        const { orderId } = await response.json()
+        
+        // Limpar carrinho
+        clearCart()
+        
+        // Redirecionar para página com instruções de transferência
+        router.push(`/checkout/sucesso?orderId=${orderId}&method=transfer`)
+      }
     } catch (error) {
+      console.error('Erro no checkout:', error)
       toast.error("Erro ao processar pagamento. Tente novamente.")
     } finally {
       setLoading(false)
@@ -366,6 +470,13 @@ export default function CheckoutPage() {
           </div>
         </div>
       </div>
+      
+      <MBWayDialog
+        open={mbwayDialogOpen}
+        onOpenChange={setMbwayDialogOpen}
+        onConfirm={handleMBWayConfirm}
+        loading={loading}
+      />
     </div>
   )
 }

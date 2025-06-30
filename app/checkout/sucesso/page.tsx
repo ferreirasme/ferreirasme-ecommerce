@@ -1,95 +1,170 @@
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { CheckCircle, Package, Mail, ArrowRight } from "lucide-react"
-import Link from "next/link"
+"use client"
 
-export default function CheckoutSuccessPage() {
-  const orderNumber = `#${Math.random().toString(36).substr(2, 9).toUpperCase()}`
+import { useEffect, useState, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { CheckCircle, Copy, Home, Package } from "lucide-react"
+import { toast } from "sonner"
+
+function SuccessContent() {
+  const searchParams = useSearchParams()
+  const orderId = searchParams?.get("orderId")
+  const method = searchParams?.get("method")
+  const sessionId = searchParams?.get("session_id")
+  
+  const [orderInfo, setOrderInfo] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    // Se tiver session_id do Stripe, verificar o pagamento
+    if (sessionId) {
+      // Aqui você verificaria o status do pagamento com o Stripe
+      setLoading(false)
+    } else if (orderId) {
+      // Buscar informações do pedido
+      setLoading(false)
+    }
+  }, [sessionId, orderId])
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+    toast.success("Copiado para a área de transferência!")
+  }
 
   return (
     <div className="container py-16">
       <div className="max-w-2xl mx-auto text-center">
         <div className="mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 mb-4">
-            <CheckCircle className="h-10 w-10 text-green-600" />
-          </div>
+          <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
           <h1 className="text-3xl font-bold mb-2">Pedido Confirmado!</h1>
-          <p className="text-lg text-muted-foreground">
-            Obrigado pela sua compra. O seu pedido foi recebido com sucesso.
+          <p className="text-muted-foreground">
+            Obrigado pela sua compra. Você receberá um email de confirmação em breve.
           </p>
         </div>
 
-        <Card className="mb-8">
-          <CardContent className="pt-6">
-            <div className="space-y-4">
+        {orderId && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Detalhes do Pedido</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground">Número do Pedido:</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono font-semibold">#{orderId}</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => copyToClipboard(orderId)}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {method === 'mbway' && (
+          <Card className="mb-8 border-primary">
+            <CardHeader>
+              <CardTitle className="text-primary">Pagamento MB Way</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                Foi enviado um pedido de pagamento para o seu telemóvel. 
+                Por favor, confirme o pagamento na aplicação MB Way.
+              </p>
+              <p className="text-sm font-semibold">
+                O pagamento expira em 5 minutos.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {method === 'transfer' && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Dados para Transferência</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-left">
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Número do Pedido</p>
-                <p className="text-2xl font-bold">{orderNumber}</p>
-              </div>
-              
-              <div className="grid sm:grid-cols-2 gap-4 pt-4">
-                <div className="flex items-start gap-3">
-                  <Mail className="h-5 w-5 text-muted-foreground mt-0.5" />
-                  <div className="text-left">
-                    <p className="font-medium">Email de Confirmação</p>
-                    <p className="text-sm text-muted-foreground">
-                      Enviámos os detalhes do pedido para o seu email
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-3">
-                  <Package className="h-5 w-5 text-muted-foreground mt-0.5" />
-                  <div className="text-left">
-                    <p className="font-medium">Prazo de Entrega</p>
-                    <p className="text-sm text-muted-foreground">
-                      2-5 dias úteis para Portugal Continental
-                    </p>
-                  </div>
+                <p className="text-sm text-muted-foreground">IBAN:</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-mono">PT50 0000 0000 0000 0000 0000 0</p>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => copyToClipboard("PT50000000000000000000000")}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+              <div>
+                <p className="text-sm text-muted-foreground">Referência:</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-mono font-semibold">#{orderId}</p>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => copyToClipboard(orderId || "")}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              <div className="pt-4 border-t">
+                <p className="text-sm text-muted-foreground">
+                  Por favor, efetue a transferência em até 3 dias úteis. 
+                  O seu pedido será processado após confirmação do pagamento.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-        <div className="space-y-6">
-          <div className="bg-muted rounded-lg p-6">
-            <h3 className="font-semibold mb-3">O que acontece a seguir?</h3>
-            <ol className="space-y-2 text-sm text-left">
-              <li className="flex items-start gap-2">
-                <span className="font-semibold">1.</span>
-                <span>Receberá um email com a confirmação e os detalhes do pedido</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="font-semibold">2.</span>
-                <span>Vamos preparar cuidadosamente o seu pedido</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="font-semibold">3.</span>
-                <span>Receberá um código de rastreamento quando o pedido for enviado</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="font-semibold">4.</span>
-                <span>A encomenda será entregue no endereço indicado</span>
-              </li>
-            </ol>
-          </div>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Button asChild>
+            <Link href="/">
+              <Home className="mr-2 h-4 w-4" />
+              Voltar à Loja
+            </Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/conta/pedidos">
+              <Package className="mr-2 h-4 w-4" />
+              Ver Meus Pedidos
+            </Link>
+          </Button>
+        </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" asChild>
-              <Link href="/produtos">
-                Continuar a Comprar
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-            <Button size="lg" variant="outline" asChild>
-              <Link href="/conta/pedidos">
-                Ver Meus Pedidos
-              </Link>
-            </Button>
-          </div>
+        <div className="mt-12 p-6 bg-muted rounded-lg">
+          <h3 className="font-semibold mb-2">Próximos Passos</h3>
+          <ul className="text-sm text-muted-foreground space-y-2 text-left">
+            <li>• Você receberá um email de confirmação com os detalhes do pedido</li>
+            <li>• Quando o pedido for enviado, receberá o código de rastreamento</li>
+            <li>• Entrega estimada em 2-5 dias úteis</li>
+            <li>• Em caso de dúvidas, entre em contato conosco</li>
+          </ul>
         </div>
       </div>
     </div>
+  )
+}
+
+export default function SuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="container py-16">
+        <div className="max-w-2xl mx-auto text-center">
+          <p>Carregando...</p>
+        </div>
+      </div>
+    }>
+      <SuccessContent />
+    </Suspense>
   )
 }
