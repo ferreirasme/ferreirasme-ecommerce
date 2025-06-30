@@ -42,7 +42,15 @@ export default function AdminLoginPage() {
       })
 
       if (error) {
+        console.error("Erro de login:", error)
         toast.error("Credenciais inválidas")
+        setIsLoading(false)
+        return
+      }
+
+      if (!data.user) {
+        toast.error("Usuário não encontrado")
+        setIsLoading(false)
         return
       }
 
@@ -52,20 +60,30 @@ export default function AdminLoginPage() {
         .select("*")
         .eq("id", data.user.id)
         .eq("active", true)
-        .single()
+        .maybeSingle()
 
-      if (adminError || !admin) {
+      if (adminError) {
+        console.error("Erro ao verificar admin:", adminError)
+        await supabase.auth.signOut()
+        toast.error("Erro ao verificar permissões")
+        setIsLoading(false)
+        return
+      }
+
+      if (!admin) {
         await supabase.auth.signOut()
         toast.error("Acesso negado. Você não tem permissões de administrador.")
+        setIsLoading(false)
         return
       }
 
       toast.success("Login realizado com sucesso!")
-      router.push("/admin/dashboard")
+      
+      // Usar window.location para garantir navegação completa
+      window.location.href = "/admin/dashboard"
     } catch (error) {
       console.error("Erro no login:", error)
       toast.error("Erro ao fazer login")
-    } finally {
       setIsLoading(false)
     }
   }
