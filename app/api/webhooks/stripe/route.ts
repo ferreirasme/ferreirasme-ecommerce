@@ -5,7 +5,8 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
   const body = await request.text()
-  const signature = headers().get('stripe-signature')!
+  const headersList = await headers()
+  const signature = headersList.get('stripe-signature')!
 
   let event
 
