@@ -18,6 +18,7 @@ import Image from "next/image"
 import { toast } from "sonner"
 import { stripePromise } from "@/lib/stripe/client"
 import { MBWayDialog } from "@/components/checkout/mbway-dialog"
+import { PaymentMethodsInfo } from "@/components/payment/payment-methods-info"
 
 interface CheckoutForm {
   // Dados pessoais
@@ -358,12 +359,17 @@ export default function CheckoutPage() {
                       <div className="flex items-center space-x-3 p-4 border rounded-lg cursor-pointer hover:bg-muted">
                         <RadioGroupItem value="card" id="card" />
                         <Label htmlFor="card" className="flex-1 cursor-pointer">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <CreditCard className="h-5 w-5" />
-                              <span>Cartão de Crédito/Débito</span>
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <div className="flex items-center gap-2">
+                                <CreditCard className="h-5 w-5" />
+                                <span>Cartão / Klarna</span>
+                              </div>
+                              <span className="text-sm text-muted-foreground">Stripe Checkout</span>
                             </div>
-                            <span className="text-sm text-muted-foreground">Visa, Mastercard</span>
+                            <p className="text-sm text-muted-foreground">
+                              Pague com cartão ou parcele com Klarna
+                            </p>
                           </div>
                         </Label>
                       </div>
@@ -478,6 +484,8 @@ export default function CheckoutPage() {
                 </div>
               </CardContent>
             </Card>
+            
+            <PaymentMethodsInfo />
           </div>
         </div>
       </div>
