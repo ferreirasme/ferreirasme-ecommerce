@@ -363,12 +363,12 @@ export default function CheckoutPage() {
                             <div className="flex items-center justify-between mb-1">
                               <div className="flex items-center gap-2">
                                 <CreditCard className="h-5 w-5" />
-                                <span>Cartão / Klarna</span>
+                                <span>Cartão de Crédito/Débito</span>
                               </div>
                               <span className="text-sm text-muted-foreground">Stripe Checkout</span>
                             </div>
                             <p className="text-sm text-muted-foreground">
-                              Pague com cartão ou parcele com Klarna
+                              Pague com segurança usando Visa, Mastercard ou American Express
                             </p>
                           </div>
                         </Label>

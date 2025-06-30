@@ -146,22 +146,23 @@ export async function POST(request: NextRequest) {
     })
     
     // Criar sessão de checkout
+    // Temporariamente remover Klarna até confirmar disponibilidade
+    const paymentMethods = ['card']
+    
+    // TODO: Adicionar Klarna quando confirmado disponível para Portugal
+    // Para habilitar Klarna: const paymentMethods = ['card', 'klarna']
+    
     const sessionConfig: any = {
-      payment_method_types: ['card', 'klarna'], // Adicionar Klarna
+      payment_method_types: paymentMethods,
       customer: customer.id,
       line_items: lineItems,
       mode: 'payment',
       success_url: `${baseUrl}/checkout/sucesso?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/checkout`,
-      // Klarna requer informações de envio
+      locale: 'pt', // Português para interface do Stripe Checkout
+      // Informações de envio
       shipping_address_collection: {
         allowed_countries: ['PT'], // Portugal
-      },
-      // Configurações específicas para Klarna
-      payment_method_options: {
-        klarna: {
-          preferred_locale: 'pt-PT', // Português de Portugal
-        },
       },
       metadata: {
         // Limitar tamanho dos metadados (máximo 500 caracteres por chave)
