@@ -30,6 +30,7 @@ interface CheckoutForm {
   
   // Endereço de entrega
   address: string
+  addressNumber: string
   addressComplement: string
   city: string
   postalCode: string
@@ -70,6 +71,7 @@ export default function CheckoutPage() {
       phone: "",
       nif: "",
       address: "",
+      addressNumber: "",
       addressComplement: "",
       city: "",
       postalCode: "",
@@ -354,22 +356,37 @@ export default function CheckoutPage() {
                     <Input
                       id="address"
                       name="address"
-                      placeholder="Rua e número"
+                      placeholder="Nome da rua"
                       value={formData.address}
                       onChange={handleInputChange}
                       required
+                      readOnly
+                      className="bg-muted"
                     />
                   </div>
                   
-                  <div>
-                    <Label htmlFor="addressComplement">Complemento (opcional)</Label>
-                    <Input
-                      id="addressComplement"
-                      name="addressComplement"
-                      placeholder="Apartamento, andar, etc."
-                      value={formData.addressComplement}
-                      onChange={handleInputChange}
-                    />
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="addressNumber">Número</Label>
+                      <Input
+                        id="addressNumber"
+                        name="addressNumber"
+                        placeholder="123"
+                        value={formData.addressNumber}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="addressComplement">Complemento (opcional)</Label>
+                      <Input
+                        id="addressComplement"
+                        name="addressComplement"
+                        placeholder="Apto, andar, etc."
+                        value={formData.addressComplement}
+                        onChange={handleInputChange}
+                      />
+                    </div>
                   </div>
                 </CardContent>
               </Card>

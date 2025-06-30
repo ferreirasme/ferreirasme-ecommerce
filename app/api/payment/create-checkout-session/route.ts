@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       name: `${customerInfo.firstName} ${customerInfo.lastName}`.trim(),
       phone: customerInfo.phone || undefined,
       address: customerInfo.address ? {
-        line1: customerInfo.address,
+        line1: `${customerInfo.address}${customerInfo.addressNumber ? ', ' + customerInfo.addressNumber : ''}`,
         line2: customerInfo.addressComplement || undefined,
         city: customerInfo.city || 'Lisboa',
         postal_code: customerInfo.postalCode || '1000-000',
@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
       // Configurações de pagamento
       payment_intent_data: {
         metadata: {
-          order_shipping_address: `${customerInfo.address}, ${customerInfo.city}, ${customerInfo.postalCode}`,
+          order_shipping_address: `${customerInfo.address}${customerInfo.addressNumber ? ', ' + customerInfo.addressNumber : ''}, ${customerInfo.city}, ${customerInfo.postalCode}`,
           order_customer_phone: customerInfo.phone,
         },
       },
@@ -186,7 +186,7 @@ export async function POST(request: NextRequest) {
         customer_name: `${customerInfo.firstName} ${customerInfo.lastName}`.replace(/[^\w\s-]/g, ''),
         shipping_city: (customerInfo.city || 'Lisboa').replace(/[^\w\s-]/g, ''),
         // Adicionar endereço completo nos metadados
-        shipping_address: customerInfo.address?.replace(/[^\w\s-,]/g, ''),
+        shipping_address: `${customerInfo.address || ''}${customerInfo.addressNumber ? ', ' + customerInfo.addressNumber : ''}`.replace(/[^\w\s-,]/g, ''),
         shipping_postal_code: customerInfo.postalCode,
         phone: customerInfo.phone,
       },
