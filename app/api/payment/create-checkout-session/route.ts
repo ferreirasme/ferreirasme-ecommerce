@@ -7,11 +7,22 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { items, customerInfo } = body
 
+    console.log('Checkout request received:', { items, customerInfo })
+
     // Verificar se temos itens
     if (!items || items.length === 0) {
       return NextResponse.json(
         { error: 'Carrinho vazio' },
         { status: 400 }
+      )
+    }
+
+    // Verificar se as variáveis de ambiente estão configuradas
+    if (!process.env.STRIPE_SECRET_KEY) {
+      console.error('STRIPE_SECRET_KEY não está configurada')
+      return NextResponse.json(
+        { error: 'Configuração de pagamento inválida' },
+        { status: 500 }
       )
     }
 
@@ -78,11 +89,23 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json({ sessionId: session.id })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao criar sessão de checkout:', error)
+    
+    // Retornar erro mais específico
+    const errorMessage = error.message || 'Erro ao processar pagamento'
+    const errorDetails = {
+      error: errorMessage,
+      type: error.type || 'unknown_error',
+      ...(process.env.NODE_ENV === 'development' && { 
+        stack: error.stack,
+        raw: error.raw 
+      })
+    }
+    
     return NextResponse.json(
-      { error: 'Erro ao processar pagamento' },
-      { status: 500 }
+      errorDetails,
+      { status: error.statusCode || 500 }
     )
   }
 }

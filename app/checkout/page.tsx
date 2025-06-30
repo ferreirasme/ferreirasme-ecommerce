@@ -139,7 +139,9 @@ export default function CheckoutPage() {
         })
 
         if (!response.ok) {
-          throw new Error('Erro ao criar sessão de pagamento')
+          const errorData = await response.json()
+          console.error('Erro na resposta:', errorData)
+          throw new Error(errorData.error || 'Erro ao criar sessão de pagamento')
         }
 
         const { sessionId } = await response.json()
@@ -186,9 +188,10 @@ export default function CheckoutPage() {
         // Redirecionar para página com instruções de transferência
         router.push(`/checkout/sucesso?orderId=${orderId}&method=transfer`)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro no checkout:', error)
-      toast.error("Erro ao processar pagamento. Tente novamente.")
+      const errorMessage = error.message || "Erro ao processar pagamento. Tente novamente."
+      toast.error(errorMessage)
     } finally {
       setLoading(false)
     }
