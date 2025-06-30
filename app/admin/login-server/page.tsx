@@ -45,11 +45,13 @@ async function login(formData: FormData) {
   }
 }
 
-export default function ServerLoginPage({ 
+export default async function ServerLoginPage({ 
   searchParams 
 }: { 
-  searchParams: { error?: string } 
+  searchParams: Promise<{ error?: string }> 
 }) {
+  const params = await searchParams
+  
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow">
@@ -60,9 +62,9 @@ export default function ServerLoginPage({
           </p>
         </div>
         
-        {searchParams.error && (
+        {params.error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-            <p className="text-sm">{searchParams.error}</p>
+            <p className="text-sm">{params.error}</p>
           </div>
         )}
         
