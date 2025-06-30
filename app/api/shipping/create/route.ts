@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { cttClient } from "@/lib/ctt/client"
 import { createClient } from "@/lib/supabase/server"
+import { sendShippingNotificationEmail } from "@/lib/resend"
 
 export async function POST(request: NextRequest) {
   try {
@@ -124,14 +125,27 @@ export async function POST(request: NextRequest) {
       console.error("Erro ao atualizar pedido:", updateError)
     }
 
-    // TODO: Enviar email de notificação ao cliente com número de rastreamento
+    // Enviar email de notificação ao cliente com número de rastreamento
+    const customerName = shippingAddress.name || order.email.split('@')[0]
+    const emailResult = await sendShippingNotificationEmail(
+      order.email,
+      order.order_number,
+      shipment.tracking_code,
+      customerName,
+      shippingAddress.shipping_method || 'EXPRESSO'
+    )
+
+    if (!emailResult.success) {
+      console.error("Erro ao enviar email de notificação:", emailResult.error)
+    }
 
     return NextResponse.json({
       message: "Envio criado com sucesso",
       numero_envio: shipment.numero_envio,
       tracking_code: shipment.tracking_code,
       etiqueta_url: shipment.etiqueta_url,
-      guia_transporte_url: shipment.guia_transporte_url
+      guia_transporte_url: shipment.guia_transporte_url,
+      email_sent: emailResult.success
     })
 
   } catch (error) {
