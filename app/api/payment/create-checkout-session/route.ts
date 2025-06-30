@@ -95,7 +95,12 @@ export async function POST(request: NextRequest) {
           price_data: {
             currency: 'eur',
             product_data: {
-              name: String(item.name || 'Produto'),
+              // Remover acentos e caracteres especiais do nome do produto
+              name: String(item.name || 'Produto')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^\w\s-]/g, '')
+                .trim() || 'Produto',
               images: imageUrl ? [imageUrl] : [],
             },
             unit_amount: Math.max(50, Math.round((item.price || 0) * 100)), // Mínimo 50 centavos

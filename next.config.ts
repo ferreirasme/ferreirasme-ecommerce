@@ -57,7 +57,7 @@ const nextConfig: NextConfig = {
                 img-src 'self' data: https: blob: http://localhost:* http://172.18.59.172:* http://192.168.131.99:* http://127.0.0.1:* http://0.0.0.0:*;
                 font-src 'self' data: http://localhost:* http://172.18.59.172:* http://192.168.131.99:* http://127.0.0.1:* http://0.0.0.0:*;
                 connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.cttexpresso.pt https://viacep.com.br http://localhost:* http://172.18.59.172:* http://192.168.131.99:* http://127.0.0.1:* http://0.0.0.0:*;
-                frame-src 'self' https://challenges.cloudflare.com;
+                frame-src 'self' https://challenges.cloudflare.com https://checkout.stripe.com https://js.stripe.com;
                 object-src 'none';
                 base-uri 'self';
                 form-action 'self';
@@ -65,12 +65,12 @@ const nextConfig: NextConfig = {
               `.replace(/\s{2,}/g, ' ').trim()
               : `
                 default-src 'self';
-                script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com;
+                script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://js.stripe.com;
                 style-src 'self' 'unsafe-inline';
                 img-src 'self' data: https: blob:;
                 font-src 'self' data:;
-                connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.cttexpresso.pt https://viacep.com.br;
-                frame-src 'self' https://challenges.cloudflare.com;
+                connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.cttexpresso.pt https://viacep.com.br https://api.stripe.com;
+                frame-src 'self' https://challenges.cloudflare.com https://checkout.stripe.com https://js.stripe.com;
                 object-src 'none';
                 base-uri 'self';
                 form-action 'self';

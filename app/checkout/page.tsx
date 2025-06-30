@@ -150,7 +150,10 @@ export default function CheckoutPage() {
         // Redirecionar para o Stripe Checkout
         const stripe = await stripePromise
         if (!stripe) {
-          throw new Error('Stripe não carregado')
+          // Se o Stripe não carregar, tentar redirecionar diretamente
+          console.error('Stripe não carregado, tentando redirecionamento direto')
+          window.location.href = `https://checkout.stripe.com/pay/${sessionId}`
+          return
         }
         
         const { error } = await stripe.redirectToCheckout({ sessionId })
