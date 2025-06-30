@@ -42,6 +42,12 @@ export async function middleware(request: NextRequest) {
     );
   }
 
+  // Check if Supabase is configured
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    console.warn('Supabase environment variables not configured');
+    return NextResponse.next();
+  }
+
   // Create response first
   let response = NextResponse.next({
     request: {
@@ -49,10 +55,11 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  // Create a Supabase client configured to use cookies
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  try {
+    // Create a Supabase client configured to use cookies
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
         get(name: string) {
@@ -107,6 +114,10 @@ export async function middleware(request: NextRequest) {
   }
 
   return response;
+  } catch (error) {
+    console.error('Middleware error:', error);
+    return NextResponse.next();
+  }
 }
 
 export const config = {
