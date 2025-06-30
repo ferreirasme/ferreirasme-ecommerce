@@ -26,7 +26,7 @@ const clientSchema = z.object({
     city: z.string().min(2, 'Cidade é obrigatória'),
     state: z.string().min(2, 'Distrito é obrigatório'),
     postalCode: z.string().regex(/^\d{4}-\d{3}$/, 'Código postal inválido'),
-    country: z.string().default('Portugal')
+    country: z.string().optional().default('Portugal')
   }).optional()
 })
 

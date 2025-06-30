@@ -15,7 +15,7 @@ import { Loader2, Lock, User } from 'lucide-react'
 export default function ConsultantLoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirect = searchParams.get('redirect') || '/consultant/dashboard'
+  const redirect = searchParams?.get('redirect') || '/consultant/dashboard'
   
   const { signInAsConsultant } = useAuthStore()
   const [loading, setLoading] = useState(false)

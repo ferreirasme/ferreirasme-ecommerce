@@ -1,31 +1,17 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
+import { createClient } from "@/lib/supabase/server"
 import { checkAdminAuth } from "@/lib/security/admin-auth"
 import { rateLimiter } from "@/lib/security/rate-limiter"
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
+  const params = await props.params;
   try {
     // Rate limiting
-    const identifier = request.ip || 'anonymous'
-    const rateLimitResult = await rateLimiter.limit(identifier, 60)
-    
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        { error: 'Too many requests' },
-        { 
-          status: 429,
-          headers: {
-            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
-            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
-            'X-RateLimit-Reset': new Date(rateLimitResult.reset).toISOString(),
-          }
-        }
-      )
-    }
+    const rateLimitResult = await rateLimiter(request)
+    if (rateLimitResult) return rateLimitResult
 
     // Check authentication
     const user = await checkAdminAuth(request)
@@ -33,8 +19,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const supabase = await createClient()
 
     // If consultant role, check if they're accessing their own data
     if (user.role === 'consultant') {
@@ -81,26 +66,13 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
+  const params = await props.params;
   try {
     // Rate limiting
-    const identifier = request.ip || 'anonymous'
-    const rateLimitResult = await rateLimiter.limit(identifier, 30)
-    
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        { error: 'Too many requests' },
-        { 
-          status: 429,
-          headers: {
-            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
-            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
-            'X-RateLimit-Reset': new Date(rateLimitResult.reset).toISOString(),
-          }
-        }
-      )
-    }
+    const rateLimitResult = await rateLimiter(request, { limit: 30, window: 60 })
+    if (rateLimitResult) return rateLimitResult
 
     // Check authentication
     const user = await checkAdminAuth(request)
@@ -108,8 +80,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const supabase = await createClient()
 
     // If consultant role, check if they're updating their own data
     if (user.role === 'consultant') {
@@ -167,7 +138,7 @@ export async function PATCH(
         old_data: { id: params.id },
         new_data: updateData,
         changed_fields: Object.keys(updateData),
-        ip_address: request.ip || 'unknown',
+        ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
         user_agent: request.headers.get('user-agent') || 'unknown'
       })
 
@@ -180,26 +151,13 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
+  const params = await props.params;
   try {
     // Rate limiting
-    const identifier = request.ip || 'anonymous'
-    const rateLimitResult = await rateLimiter.limit(identifier, 10)
-    
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        { error: 'Too many requests' },
-        { 
-          status: 429,
-          headers: {
-            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
-            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
-            'X-RateLimit-Reset': new Date(rateLimitResult.reset).toISOString(),
-          }
-        }
-      )
-    }
+    const rateLimitResult = await rateLimiter(request, { limit: 10, window: 60 })
+    if (rateLimitResult) return rateLimitResult
 
     // Check authentication and permissions
     const user = await checkAdminAuth(request)
@@ -207,8 +165,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const supabase = await createClient()
 
     // Get consultant data before deletion
     const { data: consultant } = await supabase
@@ -250,7 +207,7 @@ export async function DELETE(
         action: 'DELETE',
         user_id: user.id,
         old_data: consultant,
-        ip_address: request.ip || 'unknown',
+        ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
         user_agent: request.headers.get('user-agent') || 'unknown'
       })
 

@@ -2,7 +2,7 @@
 
 import { useEffect } from "react"
 import { useSearchParams } from "next/navigation"
-import { ConsultantTrackingClient } from "@/lib/consultant-tracking"
+import { ConsultantTrackingClient } from "@/lib/consultant-tracking-client"
 
 export function ConsultantTracker() {
   const searchParams = useSearchParams()

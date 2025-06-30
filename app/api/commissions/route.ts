@@ -1,28 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
+import { createClient } from "@/lib/supabase/server"
 import { checkAdminAuth } from "@/lib/security/admin-auth"
 import { rateLimiter } from "@/lib/security/rate-limiter"
 
 export async function GET(request: NextRequest) {
   try {
     // Rate limiting
-    const identifier = request.ip || 'anonymous'
-    const rateLimitResult = await rateLimiter.limit(identifier, 60)
-    
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        { error: 'Too many requests' },
-        { 
-          status: 429,
-          headers: {
-            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
-            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
-            'X-RateLimit-Reset': new Date(rateLimitResult.reset).toISOString(),
-          }
-        }
-      )
-    }
+    const rateLimitResult = await rateLimiter(request)
+    if (rateLimitResult) return rateLimitResult
 
     // Check authentication
     const user = await checkAdminAuth(request)
@@ -30,8 +15,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const supabase = await createClient()
 
     // Parse query parameters
     const searchParams = request.nextUrl.searchParams
@@ -139,22 +123,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Rate limiting
-    const identifier = request.ip || 'anonymous'
-    const rateLimitResult = await rateLimiter.limit(identifier, 20)
-    
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        { error: 'Too many requests' },
-        { 
-          status: 429,
-          headers: {
-            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
-            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
-            'X-RateLimit-Reset': new Date(rateLimitResult.reset).toISOString(),
-          }
-        }
-      )
-    }
+    const rateLimitResult = await rateLimiter(request, { limit: 20, window: 60 })
+    if (rateLimitResult) return rateLimitResult
 
     // Check authentication - only admin/manager can manually create commissions
     const user = await checkAdminAuth(request)
@@ -162,8 +132,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const supabase = await createClient()
 
     const body = await request.json()
 
@@ -215,7 +184,7 @@ export async function POST(request: NextRequest) {
         action: 'INSERT',
         user_id: user.id,
         new_data: commission,
-        ip_address: request.ip || 'unknown',
+        ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
         user_agent: request.headers.get('user-agent') || 'unknown'
       })
 

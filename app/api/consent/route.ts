@@ -1,28 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
+import { createClient } from "@/lib/supabase/server"
 import { checkAdminAuth } from "@/lib/security/admin-auth"
 import { rateLimiter } from "@/lib/security/rate-limiter"
 
 export async function GET(request: NextRequest) {
   try {
     // Rate limiting
-    const identifier = request.ip || 'anonymous'
-    const rateLimitResult = await rateLimiter.limit(identifier, 60)
-    
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        { error: 'Too many requests' },
-        { 
-          status: 429,
-          headers: {
-            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
-            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
-            'X-RateLimit-Reset': new Date(rateLimitResult.reset).toISOString(),
-          }
-        }
-      )
-    }
+    const rateLimitResult = await rateLimiter(request)
+    if (rateLimitResult) return rateLimitResult
 
     // Check authentication
     const user = await checkAdminAuth(request)
@@ -30,8 +15,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const supabase = await createClient()
 
     // Parse query parameters
     const searchParams = request.nextUrl.searchParams
@@ -105,25 +89,10 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Rate limiting
-    const identifier = request.ip || 'anonymous'
-    const rateLimitResult = await rateLimiter.limit(identifier, 30)
-    
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        { error: 'Too many requests' },
-        { 
-          status: 429,
-          headers: {
-            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
-            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
-            'X-RateLimit-Reset': new Date(rateLimitResult.reset).toISOString(),
-          }
-        }
-      )
-    }
+    const rateLimitResult = await rateLimiter(request, { limit: 30, window: 60 })
+    if (rateLimitResult) return rateLimitResult
 
-    const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const supabase = await createClient()
 
     const body = await request.json()
 
@@ -214,7 +183,7 @@ export async function POST(request: NextRequest) {
         action: body.action,
         version: body.version || '1.0.0',
         content_hash: body.content_hash,
-        ip_address: request.ip || 'unknown',
+        ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
         user_agent: request.headers.get('user-agent') || 'unknown',
         valid_until: body.valid_until,
         metadata: body.metadata || {}
@@ -237,7 +206,7 @@ export async function POST(request: NextRequest) {
           .update({
             consent_date: new Date().toISOString(),
             consent_version: body.version || '1.0.0',
-            consent_ip: request.ip || 'unknown'
+            consent_ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown'
           })
           .eq('id', consultantId)
       }
@@ -286,25 +255,10 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     // Rate limiting
-    const identifier = request.ip || 'anonymous'
-    const rateLimitResult = await rateLimiter.limit(identifier, 5)
-    
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        { error: 'Too many requests' },
-        { 
-          status: 429,
-          headers: {
-            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
-            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
-            'X-RateLimit-Reset': new Date(rateLimitResult.reset).toISOString(),
-          }
-        }
-      )
-    }
+    const rateLimitResult = await rateLimiter(request, { limit: 5, window: 60 })
+    if (rateLimitResult) return rateLimitResult
 
-    const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const supabase = await createClient()
 
     // Get authenticated user
     const { data: { session } } = await supabase.auth.getSession()
@@ -332,7 +286,7 @@ export async function DELETE(request: NextRequest) {
       export_date: new Date().toISOString(),
       user_id: userId,
       consent_records: consentRecords,
-      request_ip: request.ip || 'unknown',
+      request_ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
       request_user_agent: request.headers.get('user-agent') || 'unknown'
     }
 
@@ -348,7 +302,7 @@ export async function DELETE(request: NextRequest) {
           action: 'gdpr_data_export',
           record_count: consentRecords?.length || 0
         },
-        ip_address: request.ip || 'unknown',
+        ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
         user_agent: request.headers.get('user-agent') || 'unknown'
       })
 

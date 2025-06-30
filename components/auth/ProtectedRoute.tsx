@@ -23,7 +23,7 @@ export function ProtectedRoute({
   useEffect(() => {
     if (!loading && !user) {
       // Salvar a rota atual para redirecionar após o login
-      const redirectUrl = `${redirectTo}?redirect=${encodeURIComponent(pathname)}`
+      const redirectUrl = `${redirectTo}?redirect=${encodeURIComponent(pathname || '/')}`
       router.push(redirectUrl)
     }
   }, [user, loading, router, pathname, redirectTo])

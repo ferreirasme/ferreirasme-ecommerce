@@ -20,7 +20,7 @@ import { stripePromise } from "@/lib/stripe/client"
 import { MBWayDialog } from "@/components/checkout/mbway-dialog"
 import { PaymentMethodsInfo } from "@/components/payment/payment-methods-info"
 import { ConsultantInfo } from "@/components/checkout/ConsultantInfo"
-import { ConsultantTrackingClient } from "@/lib/consultant-tracking"
+import { ConsultantTrackingClient } from "@/lib/consultant-tracking-client"
 
 interface CheckoutForm {
   // Dados pessoais

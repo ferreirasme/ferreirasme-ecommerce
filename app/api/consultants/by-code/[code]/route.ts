@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
+import { createClient } from "@/lib/supabase/server"
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { code: string } }
+  props: { params: Promise<{ code: string }> }
 ) {
+  const params = await props.params;
   try {
-    const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const supabase = await createClient()
     
     const { code } = params
 

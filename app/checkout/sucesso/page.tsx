@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { CheckCircle, Copy, Home, Package } from "lucide-react"
 import { toast } from "sonner"
-import { ConsultantTrackingClient } from "@/lib/consultant-tracking"
+import { ConsultantTrackingClient } from "@/lib/consultant-tracking-client"
 
 function SuccessContent() {
   const searchParams = useSearchParams()

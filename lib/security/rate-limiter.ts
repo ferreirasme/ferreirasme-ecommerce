@@ -76,3 +76,16 @@ export function createRateLimitResponse(result: RateLimitResult) {
 
   return null;
 }
+
+// Função wrapper para compatibilidade com o código existente
+export async function rateLimiter(
+  request: any,
+  config: { limit: number; window: number } = { limit: 60, window: 60 }
+) {
+  const result = await rateLimit(request.nextUrl.pathname, {
+    uniqueTokenPerInterval: config.limit,
+    interval: config.window * 1000
+  });
+  
+  return createRateLimitResponse(result);
+}

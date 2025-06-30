@@ -42,6 +42,7 @@ export default function ClientsPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [consultantId, setConsultantId] = useState<string>('')
   const supabase = createClientComponentClient()
 
   useEffect(() => {
@@ -53,6 +54,17 @@ export default function ClientsPage() {
       const { data: { user } } = await supabase.auth.getUser()
       
       if (!user) return
+
+      // Get consultant ID
+      const { data: consultantData } = await supabase
+        .from('consultants')
+        .select('id')
+        .eq('user_id', user.id)
+        .single()
+      
+      if (consultantData) {
+        setConsultantId(consultantData.id)
+      }
 
       const { data, error } = await supabase
         .from('clients')
@@ -144,7 +156,25 @@ export default function ClientsPage() {
                 Preencha os dados do novo cliente
               </DialogDescription>
             </DialogHeader>
-            <ClientForm onSuccess={handleClientAdded} />
+            <ClientForm 
+              onSubmit={async (data) => {
+                try {
+                  const response = await fetch('/api/clients', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ...data, consultantId: consultantId })
+                  })
+                  
+                  if (!response.ok) throw new Error('Erro ao adicionar cliente')
+                  
+                  handleClientAdded()
+                } catch (error) {
+                  console.error('Erro:', error)
+                  toast.error('Erro ao adicionar cliente')
+                }
+              }}
+              consultantId={consultantId}
+            />
           </DialogContent>
         </Dialog>
       </div>

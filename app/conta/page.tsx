@@ -12,20 +12,18 @@ import Link from "next/link"
 
 export default function AccountPage() {
   const router = useRouter()
-  const { user, setUser, signOut } = useAuthStore()
+  const { user, signOut } = useAuthStore()
   const supabase = createClient()
 
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) {
         router.push("/login")
-      } else {
-        setUser(user)
       }
     }
     checkUser()
-  }, [router, setUser, supabase.auth])
+  }, [router, supabase.auth])
 
   const handleSignOut = async () => {
     await signOut()

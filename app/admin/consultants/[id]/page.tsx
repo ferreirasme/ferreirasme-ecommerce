@@ -86,8 +86,10 @@ export default function ConsultantDetailsPage() {
   const [formData, setFormData] = useState<Consultant | null>(null)
 
   useEffect(() => {
-    fetchConsultantData()
-  }, [params.id])
+    if (params?.id) {
+      fetchConsultantData()
+    }
+  }, [params?.id])
 
   const fetchConsultantData = async () => {
     try {
@@ -97,7 +99,7 @@ export default function ConsultantDetailsPage() {
       const { data: consultantData, error: consultantError } = await supabase
         .from('consultants')
         .select('*')
-        .eq('id', params.id)
+        .eq('id', params?.id || '')
         .single()
 
       if (consultantError) throw consultantError
@@ -109,7 +111,7 @@ export default function ConsultantDetailsPage() {
       const { data: clientsData, error: clientsError } = await supabase
         .from('clients')
         .select('*')
-        .eq('consultant_id', params.id)
+        .eq('consultant_id', params?.id || '')
         .order('created_at', { ascending: false })
 
       if (clientsError) throw clientsError
@@ -119,7 +121,7 @@ export default function ConsultantDetailsPage() {
       const { data: commissionsData, error: commissionsError } = await supabase
         .from('consultant_commissions')
         .select('*')
-        .eq('consultant_id', params.id)
+        .eq('consultant_id', params?.id || '')
         .order('created_at', { ascending: false })
         .limit(10)
 
@@ -162,7 +164,7 @@ export default function ConsultantDetailsPage() {
           monthly_target: formData.monthly_target,
           notes: formData.notes
         })
-        .eq('id', params.id)
+        .eq('id', params?.id || '')
 
       if (error) throw error
 

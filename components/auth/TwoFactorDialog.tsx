@@ -105,7 +105,6 @@ export function TwoFactorDialog({ open, onClose, onSuccess, userId }: TwoFactorD
               value={code}
               onChange={setCode}
               length={6}
-              disabled={loading}
             />
           </div>
 

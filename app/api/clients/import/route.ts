@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
+import { createClient } from "@/lib/supabase/server"
 import { checkAdminAuth } from "@/lib/security/admin-auth"
 import { rateLimiter } from "@/lib/security/rate-limiter"
 
@@ -22,22 +21,8 @@ interface ClientRow {
 export async function POST(request: NextRequest) {
   try {
     // Rate limiting - stricter for bulk operations
-    const identifier = request.ip || 'anonymous'
-    const rateLimitResult = await rateLimiter.limit(identifier, 5) // 5 requests per minute
-    
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        { error: 'Too many requests' },
-        { 
-          status: 429,
-          headers: {
-            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
-            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
-            'X-RateLimit-Reset': new Date(rateLimitResult.reset).toISOString(),
-          }
-        }
-      )
-    }
+    const rateLimitResult = await rateLimiter(request, { limit: 5, window: 60 })
+    if (rateLimitResult) return rateLimitResult
 
     // Check authentication
     const user = await checkAdminAuth(request)
@@ -45,8 +30,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const supabase = await createClient()
 
     // Parse form data
     const formData = await request.formData()
@@ -208,7 +192,7 @@ export async function POST(request: NextRequest) {
           count: insertedClients?.length || 0,
           consultant_id: consultantId
         },
-        ip_address: request.ip || 'unknown',
+        ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
         user_agent: request.headers.get('user-agent') || 'unknown'
       })
 

@@ -87,10 +87,10 @@ export default function CommissionsPage() {
           status,
           created_at,
           paid_at,
-          order:orders (
+          order:orders!inner (
             order_number,
             total,
-            client:clients (
+            client:clients!inner (
               name
             )
           )
@@ -127,12 +127,30 @@ export default function CommissionsPage() {
 
       if (error) throw error
 
-      setCommissions(data || [])
+      const formattedData = data?.map((item: any) => ({
+        id: item.id,
+        order_id: item.order_id,
+        amount: item.amount,
+        status: item.status,
+        created_at: item.created_at,
+        paid_at: item.paid_at,
+        order: {
+          order_number: item.order?.order_number || '',
+          total: item.order?.total || 0,
+          client: {
+            name: item.order?.client?.name || 'Cliente desconhecido'
+          }
+        }
+      })) || []
+
+      setCommissions(formattedData)
 
       // Calcular estatísticas
-      const totalStats = data?.reduce((acc, commission) => {
+      const totalStats = data?.reduce((acc, commission: any) => {
         acc.total += commission.amount
-        acc[commission.status] += commission.amount
+        if (commission.status in acc) {
+          acc[commission.status as keyof typeof acc] += commission.amount
+        }
         return acc
       }, { total: 0, pending: 0, approved: 0, paid: 0 }) || stats
 

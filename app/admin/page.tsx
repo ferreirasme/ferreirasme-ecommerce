@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Users, UserPlus, DollarSign, TrendingUp } from "lucide-react"
 
 export default async function AdminDashboard() {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

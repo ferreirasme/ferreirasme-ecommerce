@@ -19,7 +19,7 @@ type LoginMethod = 'password' | 'otp'
 export default function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirect = searchParams.get('redirect') || '/conta'
+  const redirect = searchParams?.get('redirect') || '/conta'
   
   const { signIn } = useAuthStore()
   const [email, setEmail] = useState('')

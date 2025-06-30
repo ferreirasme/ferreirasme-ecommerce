@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
+import { createClient } from "@/lib/supabase/server"
 import { sendMonthlyReportEmail } from "@/lib/resend"
+import { Client } from "@/types/consultant"
 
 // This endpoint can be called by a cron job on the 1st of each month
 export async function POST(request: NextRequest) {
@@ -12,8 +12,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const supabase = await createClient()
 
     // Get current date info
     const now = new Date()
@@ -117,7 +116,7 @@ export async function POST(request: NextRequest) {
 
         const topClients = Object.values(clientTotals)
           .sort((a: any, b: any) => b.totalSpent - a.totalSpent)
-          .slice(0, 3)
+          .slice(0, 3) as (Client & { totalSpent: number })[]
 
         // Format consultant data
         const consultantData = {
