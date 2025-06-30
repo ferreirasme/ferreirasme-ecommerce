@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Criar ou obter cliente no Stripe
+    // Criar ou obter cliente no Stripe - sanitizar dados para evitar caracteres especiais
     const customerData = {
       email: customerInfo.email,
       name: `${customerInfo.firstName} ${customerInfo.lastName}`.trim(),
@@ -73,12 +73,23 @@ export async function POST(request: NextRequest) {
       ...items.map((item: any) => {
         console.log('Processing item:', item)
         
-        // Garantir que a URL da imagem seja absoluta
-        const imageUrl = item.image_url?.startsWith('http') 
-          ? item.image_url 
-          : item.image_url 
-            ? `${process.env.NEXT_PUBLIC_URL}${item.image_url}`
-            : undefined
+        // Garantir que a URL da imagem seja absoluta e codificada
+        let imageUrl = undefined
+        if (item.image_url) {
+          if (item.image_url.startsWith('http')) {
+            imageUrl = item.image_url
+          } else {
+            const baseUrlForImages = process.env.NEXT_PUBLIC_URL || 'https://ferreirasme-ecommerce.vercel.app'
+            imageUrl = `${baseUrlForImages}${item.image_url}`
+          }
+          // Garantir que a URL está codificada corretamente
+          try {
+            imageUrl = new URL(imageUrl).toString()
+          } catch (e) {
+            console.error('Invalid image URL:', imageUrl)
+            imageUrl = undefined
+          }
+        }
             
         return {
           price_data: {
@@ -116,7 +127,12 @@ export async function POST(request: NextRequest) {
 
     // Garantir URL base válida
     const host = request.headers.get('host')
-    const baseUrl = process.env.NEXT_PUBLIC_URL || (host ? `https://${host}` : 'https://ferreirasme-ecommerce.vercel.app')
+    let baseUrl = process.env.NEXT_PUBLIC_URL || (host ? `https://${host}` : 'https://ferreirasme-ecommerce.vercel.app')
+    
+    // Garantir que não há '//' duplo
+    if (baseUrl.endsWith('/')) {
+      baseUrl = baseUrl.slice(0, -1)
+    }
     
     console.log('Base URL configuration:', { 
       env: process.env.NEXT_PUBLIC_URL, 
@@ -134,13 +150,21 @@ export async function POST(request: NextRequest) {
       cancel_url: `${baseUrl}/checkout`,
       metadata: {
         // Limitar tamanho dos metadados (máximo 500 caracteres por chave)
+        // Remover caracteres especiais que podem causar problemas
         customer_email: customerInfo.email,
-        customer_name: `${customerInfo.firstName} ${customerInfo.lastName}`,
-        shipping_city: customerInfo.city || 'Lisboa',
+        customer_name: `${customerInfo.firstName} ${customerInfo.lastName}`.replace(/[^\w\s-]/g, ''),
+        shipping_city: (customerInfo.city || 'Lisboa').replace(/[^\w\s-]/g, ''),
       },
     }
 
     console.log('Session config:', JSON.stringify(sessionConfig, null, 2))
+    
+    // Log das URLs para debug
+    console.log('URLs being used:', {
+      success: sessionConfig.success_url,
+      cancel: sessionConfig.cancel_url,
+      baseUrl: baseUrl
+    })
     
     const session = await stripe.checkout.sessions.create(sessionConfig)
 
