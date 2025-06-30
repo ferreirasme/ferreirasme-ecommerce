@@ -24,9 +24,9 @@ export function PaymentMethodsInfo() {
               K
             </div>
             <div className="flex-1">
-              <p className="font-medium">Klarna</p>
+              <p className="font-medium">Klarna <span className="text-xs bg-green-100 text-green-800 px-1.5 py-0.5 rounded-full ml-1">Novo</span></p>
               <p className="text-sm text-muted-foreground">
-                Parcele sua compra em até 3x sem juros ou pague em 30 dias
+                Parcele em até 3x sem juros ou pague em 30 dias
               </p>
               <Link href="/klarna-info" className="text-xs text-primary hover:underline">
                 Saiba mais sobre o Klarna →

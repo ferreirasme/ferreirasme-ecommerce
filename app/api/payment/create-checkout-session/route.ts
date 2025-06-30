@@ -146,11 +146,8 @@ export async function POST(request: NextRequest) {
     })
     
     // Criar sessão de checkout
-    // Temporariamente remover Klarna até confirmar disponibilidade
-    const paymentMethods = ['card']
-    
-    // TODO: Adicionar Klarna quando confirmado disponível para Portugal
-    // Para habilitar Klarna: const paymentMethods = ['card', 'klarna']
+    // Klarna confirmado disponível para Portugal
+    const paymentMethods = ['card', 'klarna']
     
     const sessionConfig: any = {
       payment_method_types: paymentMethods,
