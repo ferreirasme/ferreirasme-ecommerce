@@ -32,6 +32,10 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # vercel
 .vercel
@@ -39,3 +43,30 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# MCP configuration
+mcp-config.json
+
+# logs
+*.log
+server.log
+dev.log
+ngrok.log
+
+# temporary files
+*.tmp
+*.temp
+.cache/
+
+# CTT Database files
+*.txt:Zone.Identifier
+
+# Tunnel binaries
+ngrok
+cloudflared-linux-amd64
+bore
+
+# Test files
+/test-results/
+/playwright-report/
+/playwright/.cache/
