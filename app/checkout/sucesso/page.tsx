@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { CheckCircle, Copy, Home, Package } from "lucide-react"
 import { toast } from "sonner"
+import { ConsultantTrackingClient } from "@/lib/consultant-tracking"
 
 function SuccessContent() {
   const searchParams = useSearchParams()
@@ -15,17 +16,45 @@ function SuccessContent() {
   const sessionId = searchParams?.get("session_id")
   
   const [orderInfo, setOrderInfo] = useState<any>(null)
+  const [consultantInfo, setConsultantInfo] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Se tiver session_id do Stripe, verificar o pagamento
-    if (sessionId) {
-      // Aqui você verificaria o status do pagamento com o Stripe
-      setLoading(false)
-    } else if (orderId) {
-      // Buscar informações do pedido
-      setLoading(false)
+    const fetchOrderDetails = async () => {
+      try {
+        // Se tiver session_id do Stripe, verificar o pagamento
+        if (sessionId) {
+          // Aqui você verificaria o status do pagamento com o Stripe
+          // e buscaria detalhes do pedido
+        } else if (orderId) {
+          // Buscar informações do pedido
+          const response = await fetch(`/api/orders/${orderId}`)
+          if (response.ok) {
+            const data = await response.json()
+            setOrderInfo(data)
+            
+            // Se houver consultora vinculada, buscar informações dela
+            if (data.consultant_code) {
+              const consultantResponse = await fetch(`/api/consultants/by-code/${data.consultant_code}`)
+              if (consultantResponse.ok) {
+                const consultantData = await consultantResponse.json()
+                setConsultantInfo(consultantData)
+              }
+            }
+          }
+        }
+        
+        // Limpar código de consultora do localStorage após o sucesso
+        ConsultantTrackingClient.remove()
+        // Manter cookie para tracking futuro
+      } catch (error) {
+        console.error('Erro ao buscar detalhes do pedido:', error)
+      } finally {
+        setLoading(false)
+      }
     }
+    
+    fetchOrderDetails()
   }, [sessionId, orderId])
 
   const copyToClipboard = (text: string) => {
@@ -122,6 +151,30 @@ function SuccessContent() {
                   O seu pedido será processado após confirmação do pagamento.
                 </p>
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {consultantInfo && (
+          <Card className="mb-8 border-primary/20 bg-primary/5">
+            <CardHeader>
+              <CardTitle className="text-lg">Consultora Vinculada</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center">
+                  <span className="text-primary font-semibold">
+                    {consultantInfo.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)}
+                  </span>
+                </div>
+                <div>
+                  <p className="font-medium">{consultantInfo.full_name}</p>
+                  <p className="text-sm text-muted-foreground">Código: {consultantInfo.code}</p>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground mt-3">
+                Esta compra foi vinculada à sua consultora. Ela receberá uma comissão sobre este pedido.
+              </p>
             </CardContent>
           </Card>
         )}

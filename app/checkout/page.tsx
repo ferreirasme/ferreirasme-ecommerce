@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useCartStore } from "@/store/cart"
 import { useAuthStore } from "@/store/auth"
 import { formatCurrency } from "@/lib/format"
@@ -19,6 +19,8 @@ import { toast } from "sonner"
 import { stripePromise } from "@/lib/stripe/client"
 import { MBWayDialog } from "@/components/checkout/mbway-dialog"
 import { PaymentMethodsInfo } from "@/components/payment/payment-methods-info"
+import { ConsultantInfo } from "@/components/checkout/ConsultantInfo"
+import { ConsultantTrackingClient } from "@/lib/consultant-tracking"
 
 interface CheckoutForm {
   // Dados pessoais
@@ -41,11 +43,13 @@ interface CheckoutForm {
 
 export default function CheckoutPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { items, getTotalPrice, clearCart } = useCartStore()
   const user = useAuthStore((state) => state.user)
   
   const [loading, setLoading] = useState(false)
   const [mbwayDialogOpen, setMbwayDialogOpen] = useState(false)
+  const [consultantCode, setConsultantCode] = useState<string | null>(null)
   
   // Carregar dados salvos do localStorage
   const [formData, setFormData] = useState<CheckoutForm>(() => {
@@ -88,6 +92,30 @@ export default function CheckoutPage() {
       router.push("/carrinho")
     }
   }, [items.length, router])
+
+  // Detectar código de consultora na URL
+  useEffect(() => {
+    const refCode = searchParams?.get('ref')
+    if (refCode) {
+      console.log('Código de consultora detectado:', refCode)
+      setConsultantCode(refCode.toUpperCase())
+      
+      // Salvar usando o sistema de tracking
+      ConsultantTrackingClient.set(refCode, 'checkout_url')
+      
+      // Também salvar em cookie para tracking
+      const expires = new Date()
+      expires.setDate(expires.getDate() + 30)
+      document.cookie = `consultant_ref=${refCode.toUpperCase()}; expires=${expires.toUTCString()}; path=/`
+    } else {
+      // Verificar se já existe código salvo
+      const tracking = ConsultantTrackingClient.get()
+      if (tracking) {
+        setConsultantCode(tracking.code)
+        console.log('Código de consultora recuperado:', tracking.code, 'Source:', tracking.source)
+      }
+    }
+  }, [searchParams])
   
   // Salvar dados do formulário no localStorage quando mudarem
   useEffect(() => {
@@ -99,6 +127,13 @@ export default function CheckoutPage() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
+  }
+
+  const handleRemoveConsultant = () => {
+    setConsultantCode(null)
+    ConsultantTrackingClient.remove()
+    // Remover cookie
+    document.cookie = 'consultant_ref=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/'
   }
 
   const handleMBWayConfirm = async (phoneNumber: string) => {
@@ -121,6 +156,7 @@ export default function CheckoutPage() {
           })),
           customerInfo: formData,
           phoneNumber: phoneNumber,
+          consultantCode: consultantCode,
         }),
       })
 
@@ -165,6 +201,7 @@ export default function CheckoutPage() {
               image_url: item.image_url,
             })),
             customerInfo: formData,
+            consultantCode: consultantCode,
           }),
         })
 
@@ -206,6 +243,7 @@ export default function CheckoutPage() {
             items: items,
             customerInfo: formData,
             paymentMethod: 'transfer',
+            consultantCode: consultantCode,
           }),
         })
 
@@ -251,6 +289,12 @@ export default function CheckoutPage() {
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
             <form onSubmit={handleSubmit} className="space-y-8">
+              {/* Informações da Consultora */}
+              <ConsultantInfo 
+                consultantCode={consultantCode} 
+                onRemove={handleRemoveConsultant}
+              />
+              
               <Card>
                 <CardHeader>
                   <CardTitle>Informações Pessoais</CardTitle>

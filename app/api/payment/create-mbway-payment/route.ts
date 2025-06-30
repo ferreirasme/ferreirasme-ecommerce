@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/server'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { items, customerInfo, phoneNumber } = body
+    const { items, customerInfo, phoneNumber, consultantCode } = body
 
     // Validar número de telefone português
     const phoneRegex = /^(?:\+351)?9[1236]\d{7}$/
@@ -29,6 +29,21 @@ export async function POST(request: NextRequest) {
     // Criar pedido no banco de dados
     const supabase = await createClient()
     
+    // Se houver código de consultora, buscar o ID da consultora
+    let consultantId = null
+    if (consultantCode) {
+      const { data: consultantData } = await supabase
+        .from('consultants')
+        .select('id')
+        .eq('code', consultantCode.toUpperCase())
+        .eq('status', 'active')
+        .single()
+      
+      if (consultantData) {
+        consultantId = consultantData.id
+      }
+    }
+    
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
@@ -48,12 +63,47 @@ export async function POST(request: NextRequest) {
         payment_method: 'mbway',
         payment_status: 'pending',
         status: 'pending',
+        consultant_id: consultantId,
+        consultant_code: consultantCode || null,
       })
       .select()
       .single()
 
     if (orderError) {
       throw orderError
+    }
+
+    // Se houver consultora vinculada, criar registro de comissão
+    if (consultantId && order) {
+      const commissionRate = 10 // Taxa padrão de 10%
+      const commissionAmount = total * (commissionRate / 100)
+      
+      const { error: commissionError } = await supabase
+        .from('commissions')
+        .insert({
+          consultant_id: consultantId,
+          order_id: order.id,
+          client_id: customerInfo.email, // Usando email como identificador temporário
+          order_amount: total,
+          commission_rate: commissionRate,
+          commission_amount: commissionAmount,
+          order_date: new Date().toISOString(),
+          status: 'pending',
+          order_details: {
+            orderNumber: order.id,
+            customerName: `${customerInfo.firstName} ${customerInfo.lastName}`,
+            items: items.map((item: any) => ({
+              name: item.name,
+              quantity: item.quantity,
+              price: item.price
+            }))
+          }
+        })
+      
+      if (commissionError) {
+        console.error('Erro ao criar comissão:', commissionError)
+        // Não falhar o pedido se houver erro na comissão
+      }
     }
 
     // Aqui você integraria com o gateway de MB Way

@@ -5,9 +5,9 @@ import { createClient } from '@/lib/supabase/server'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { items, customerInfo } = body
+    const { items, customerInfo, consultantCode } = body
 
-    console.log('Checkout request received:', JSON.stringify({ items, customerInfo }, null, 2))
+    console.log('Checkout request received:', JSON.stringify({ items, customerInfo, consultantCode }, null, 2))
 
     // Verificar se temos itens
     if (!items || items.length === 0) {
@@ -152,6 +152,7 @@ export async function POST(request: NextRequest) {
         metadata: {
           order_shipping_address: `${customerInfo.address}${customerInfo.addressNumber ? ', ' + customerInfo.addressNumber : ''}, ${customerInfo.city}, ${customerInfo.postalCode}`,
           order_customer_phone: customerInfo.phone,
+          consultant_code: consultantCode || '',
         },
       },
       // Pré-preencher endereço de cobrança
@@ -189,6 +190,7 @@ export async function POST(request: NextRequest) {
         shipping_address: `${customerInfo.address || ''}${customerInfo.addressNumber ? ', ' + customerInfo.addressNumber : ''}`.replace(/[^\w\s-,]/g, ''),
         shipping_postal_code: customerInfo.postalCode,
         phone: customerInfo.phone,
+        consultant_code: consultantCode || '',
       },
     }
 

@@ -1,4 +1,5 @@
 import { Resend } from 'resend'
+import type { Consultant, Client, Commission } from '@/types/consultant'
 
 export const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -198,6 +199,163 @@ export async function sendShippingNotificationEmail(
     return { success: true, data }
   } catch (error) {
     console.error('Error sending shipping notification email:', error)
+    return { success: false, error }
+  }
+}
+
+// Template de boas-vindas para consultoras
+export async function sendConsultantWelcomeEmail(
+  consultant: Consultant,
+  temporaryPassword?: string
+) {
+  try {
+    const ConsultantWelcome = (await import('@/components/emails/ConsultantWelcome')).default
+    const { data, error } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'Ferreiras ME <noreply@ferreirasme.pt>',
+      to: [consultant.email],
+      subject: 'Bem-vinda à equipe Ferreiras ME!',
+      react: ConsultantWelcome({
+        consultant,
+        temporaryPassword,
+        unsubscribeLink: `${process.env.NEXT_PUBLIC_APP_URL}/consultant/preferences?token=${consultant.id}`
+      })
+    })
+
+    if (error) {
+      throw error
+    }
+
+    return { success: true, data }
+  } catch (error) {
+    console.error('Error sending consultant welcome email:', error)
+    return { success: false, error }
+  }
+}
+
+// Template de nova comissão
+export async function sendNewCommissionEmail(
+  consultant: Consultant,
+  commission: Commission
+) {
+  try {
+    const NewCommission = (await import('@/components/emails/NewCommission')).default
+    const { data, error } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'Ferreiras ME <noreply@ferreirasme.pt>',
+      to: [consultant.email],
+      subject: `Nova comissão registrada - Pedido #${commission.orderDetails.orderNumber}`,
+      react: NewCommission({
+        consultant,
+        commission,
+        dashboardLink: `${process.env.NEXT_PUBLIC_APP_URL}/consultant/dashboard`,
+        unsubscribeLink: `${process.env.NEXT_PUBLIC_APP_URL}/consultant/preferences?token=${consultant.id}`
+      })
+    })
+
+    if (error) {
+      throw error
+    }
+
+    return { success: true, data }
+  } catch (error) {
+    console.error('Error sending new commission email:', error)
+    return { success: false, error }
+  }
+}
+
+// Template de aprovação de pagamento
+export async function sendPaymentApprovedEmail(
+  consultant: Consultant,
+  commission: Commission
+) {
+  try {
+    const PaymentApproved = (await import('@/components/emails/PaymentApproved')).default
+    const { data, error } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'Ferreiras ME <noreply@ferreirasme.pt>',
+      to: [consultant.email],
+      subject: 'Pagamento de comissão aprovado',
+      react: PaymentApproved({
+        consultant,
+        commission,
+        dashboardLink: `${process.env.NEXT_PUBLIC_APP_URL}/consultant/dashboard`,
+        unsubscribeLink: `${process.env.NEXT_PUBLIC_APP_URL}/consultant/preferences?token=${consultant.id}`
+      })
+    })
+
+    if (error) {
+      throw error
+    }
+
+    return { success: true, data }
+  } catch (error) {
+    console.error('Error sending payment approved email:', error)
+    return { success: false, error }
+  }
+}
+
+// Template de nova cliente vinculada
+export async function sendNewClientLinkedEmail(
+  consultant: Consultant,
+  client: Client
+) {
+  try {
+    const NewClientLinked = (await import('@/components/emails/NewClientLinked')).default
+    const { data, error } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'Ferreiras ME <noreply@ferreirasme.pt>',
+      to: [consultant.email],
+      subject: 'Nova cliente vinculada à sua conta',
+      react: NewClientLinked({
+        consultant,
+        client,
+        dashboardLink: `${process.env.NEXT_PUBLIC_APP_URL}/consultant/dashboard`,
+        unsubscribeLink: `${process.env.NEXT_PUBLIC_APP_URL}/consultant/preferences?token=${consultant.id}`
+      })
+    })
+
+    if (error) {
+      throw error
+    }
+
+    return { success: true, data }
+  } catch (error) {
+    console.error('Error sending new client linked email:', error)
+    return { success: false, error }
+  }
+}
+
+// Template de resumo mensal
+export async function sendMonthlyReportEmail(
+  consultant: Consultant,
+  reportData: {
+    month: string
+    year: number
+    totalCommissions: number
+    totalEarnings: number
+    newClients: number
+    topClients: Array<Client & { totalSpent: number }>
+    commissions: Commission[]
+  }
+) {
+  try {
+    const MonthlyReport = (await import('@/components/emails/MonthlyReport')).default
+    const { data, error } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'Ferreiras ME <noreply@ferreirasme.pt>',
+      to: [consultant.email],
+      subject: `Resumo mensal - ${reportData.month}/${reportData.year}`,
+      react: MonthlyReport({
+        consultant,
+        reportData,
+        dashboardLink: `${process.env.NEXT_PUBLIC_APP_URL}/consultant/dashboard`,
+        unsubscribeLink: `${process.env.NEXT_PUBLIC_APP_URL}/consultant/preferences?token=${consultant.id}`
+      })
+    })
+
+    if (error) {
+      throw error
+    }
+
+    return { success: true, data }
+  } catch (error) {
+    console.error('Error sending monthly report email:', error)
     return { success: false, error }
   }
 }
