@@ -147,19 +147,19 @@ export default function CheckoutPage() {
 
         const { sessionId } = await response.json()
         
-        // Redirecionar para o Stripe Checkout
-        const stripe = await stripePromise
-        if (!stripe) {
-          // Se o Stripe não carregar, tentar redirecionar diretamente
-          console.error('Stripe não carregado, tentando redirecionamento direto')
-          window.location.href = `https://checkout.stripe.com/pay/${sessionId}`
-          return
-        }
-        
-        const { error } = await stripe.redirectToCheckout({ sessionId })
-        
-        if (error) {
-          throw error
+        // Tentar carregar o Stripe
+        try {
+          const stripe = await stripePromise
+          if (stripe) {
+            const { error } = await stripe.redirectToCheckout({ sessionId })
+            if (error) throw error
+          } else {
+            throw new Error('Stripe não carregado')
+          }
+        } catch (stripeError) {
+          // Se falhar, usar redirecionamento alternativo
+          console.error('Erro ao carregar Stripe, usando redirecionamento alternativo:', stripeError)
+          router.push(`/stripe-redirect?session_id=${sessionId}`)
         }
       } else if (formData.paymentMethod === 'mbway') {
         // Abrir diálogo do MB Way
