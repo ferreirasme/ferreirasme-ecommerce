@@ -36,7 +36,7 @@ interface NotificationStore {
   getNotificationsByType: (type: NotificationType) => Notification[]
 }
 
-export const useNotificationStore = create<NotificationStore>(
+export const useNotificationStore = create<NotificationStore>()(
   persist(
     (set, get) => ({
       notifications: [],

@@ -34,7 +34,7 @@ const consultantSchema = z.object({
     city: z.string().min(2, 'Cidade é obrigatória'),
     state: z.string().min(2, 'Distrito é obrigatório'),
     postalCode: z.string().regex(/^\d{4}-\d{3}$/, 'Código postal inválido'),
-    country: z.string().default('Portugal')
+    country: z.string().min(2, 'País é obrigatório')
   }),
   commissionRate: z.number().min(0).max(100).default(10)
 })
@@ -59,10 +59,18 @@ export function ConsultantForm({ onSubmit, initialData, isLoading }: ConsultantF
     setValue,
     trigger
   } = useForm<ConsultantFormValues>({
-    resolver: zodResolver(consultantSchema),
+    // resolver: zodResolver(consultantSchema),
     defaultValues: {
       ...initialData,
-      country: initialData?.address?.country || 'Portugal',
+      address: {
+        street: initialData?.address?.street || '',
+        number: initialData?.address?.number || '',
+        complement: initialData?.address?.complement || '',
+        city: initialData?.address?.city || '',
+        state: initialData?.address?.state || '',
+        postalCode: initialData?.address?.postalCode || '',
+        country: initialData?.address?.country || 'Portugal'
+      },
       commissionRate: initialData?.commissionRate || 10
     }
   })

@@ -114,7 +114,7 @@ export default function ConsultantWelcome({
               Este email foi enviado para {consultant.email} porque você se
               cadastrou como consultora Ferreiras ME.
             </Text>
-            <Link href={unsubscribeLink} style={unsubscribeLink}>
+            <Link href={unsubscribeLink} style={button}>
               Gerenciar preferências de email
             </Link>
           </Section>

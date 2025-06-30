@@ -184,9 +184,10 @@ export function ConsentManager({ consultantId, consents, onConsentUpdate, isLoad
                   return (
                     <Card key={type} className="p-4">
                       <h4 className="font-medium mb-3 flex items-center gap-2">
-                        {consentConfig[type].icon && (
-                          <consentConfig[type].icon className="w-4 h-4" />
-                        )}
+                        {consentConfig[type].icon && (() => {
+                          const Icon = consentConfig[type].icon
+                          return <Icon className="w-4 h-4" />
+                        })()}
                         {consentConfig[type].title}
                       </h4>
                       <div className="space-y-2">

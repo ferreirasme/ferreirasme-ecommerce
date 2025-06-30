@@ -60,7 +60,7 @@ export default function MonthlyReport({
     <Html>
       <Head />
       <Preview>
-        Resumo mensal - {reportData.month}/{reportData.year}
+        Resumo mensal - {reportData.month}/{String(reportData.year)}
       </Preview>
       <Body style={main}>
         <Container style={container}>
@@ -191,7 +191,7 @@ export default function MonthlyReport({
               Este email foi enviado para {consultant.email} porque você é uma
               consultora ativa Ferreiras ME.
             </Text>
-            <Link href={unsubscribeLink} style={unsubscribeLink}>
+            <Link href={unsubscribeLink} style={button}>
               Gerenciar preferências de email
             </Link>
           </Section>

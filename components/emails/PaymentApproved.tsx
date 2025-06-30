@@ -141,7 +141,7 @@ export default function PaymentApproved({
               Este email foi enviado para {consultant.email} porque você é uma
               consultora ativa Ferreiras ME.
             </Text>
-            <Link href={unsubscribeLink} style={unsubscribeLink}>
+            <Link href={unsubscribeLink} style={button}>
               Gerenciar preferências de email
             </Link>
           </Section>

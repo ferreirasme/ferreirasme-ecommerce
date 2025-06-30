@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Commission, CommissionFilter, CommissionStatus } from '@/types/consultant'
-import { useAuthStore } from '@/store/auth-store'
+import { useAuthStore } from '@/store/auth'
 import { useToast } from '@/components/ui/use-toast'
 import { startOfMonth, endOfMonth, subMonths } from 'date-fns'
 
@@ -58,7 +58,7 @@ export function useCommissions(): UseCommissionsReturn {
         `/api/consultants/${consultantId}/commissions?${queryParams.toString()}`,
         {
           headers: {
-            'Authorization': `Bearer ${user?.token}`,
+            // 'Authorization': `Bearer ${user?.token}`, // Token removed from UserProfile
             'Content-Type': 'application/json'
           }
         }
@@ -81,7 +81,7 @@ export function useCommissions(): UseCommissionsReturn {
     } finally {
       setIsLoading(false)
     }
-  }, [filters, user?.token, toast])
+  }, [filters, user, toast])
 
   // Export commissions to CSV
   const exportCommissions = useCallback(async () => {

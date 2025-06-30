@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Consultant, ConsultantFormData, ConsultantDashboard } from '@/types/consultant'
-import { useAuthStore } from '@/store/auth-store'
+import { useAuthStore } from '@/store/auth'
 import { useToast } from '@/components/ui/use-toast'
 
 interface UseConsultantReturn {
@@ -40,7 +40,7 @@ export function useConsultant(): UseConsultantReturn {
       // Simulate API call
       const response = await fetch(`/api/consultants/${id}`, {
         headers: {
-          'Authorization': `Bearer ${user?.token}`,
+          // 'Authorization': `Bearer ${user?.token}`, // Token removed from UserProfile
           'Content-Type': 'application/json'
         }
       })
@@ -62,7 +62,7 @@ export function useConsultant(): UseConsultantReturn {
     } finally {
       setIsLoading(false)
     }
-  }, [user?.token, toast])
+  }, [user, toast])
 
   // Fetch dashboard data
   const fetchDashboard = useCallback(async (id: string) => {
@@ -73,7 +73,7 @@ export function useConsultant(): UseConsultantReturn {
       // Simulate API call
       const response = await fetch(`/api/consultants/${id}/dashboard`, {
         headers: {
-          'Authorization': `Bearer ${user?.token}`,
+          // 'Authorization': `Bearer ${user?.token}`, // Token removed from UserProfile
           'Content-Type': 'application/json'
         }
       })
@@ -95,7 +95,7 @@ export function useConsultant(): UseConsultantReturn {
     } finally {
       setIsLoading(false)
     }
-  }, [user?.token, toast])
+  }, [user, toast])
 
   // Create consultant
   const createConsultant = useCallback(async (data: ConsultantFormData): Promise<Consultant> => {
@@ -117,7 +117,7 @@ export function useConsultant(): UseConsultantReturn {
       const response = await fetch('/api/consultants', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${user?.token}`,
+          // 'Authorization': `Bearer ${user?.token}`, // Token removed from UserProfile
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(consultantData)
@@ -148,7 +148,7 @@ export function useConsultant(): UseConsultantReturn {
     } finally {
       setIsLoading(false)
     }
-  }, [user?.token, generateConsultantCode, toast])
+  }, [user, generateConsultantCode, toast])
 
   // Update consultant
   const updateConsultant = useCallback(async (id: string, data: Partial<ConsultantFormData>): Promise<Consultant> => {
@@ -165,7 +165,7 @@ export function useConsultant(): UseConsultantReturn {
       const response = await fetch(`/api/consultants/${id}`, {
         method: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${user?.token}`,
+          // 'Authorization': `Bearer ${user?.token}`, // Token removed from UserProfile
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(updateData)
@@ -196,7 +196,7 @@ export function useConsultant(): UseConsultantReturn {
     } finally {
       setIsLoading(false)
     }
-  }, [user?.token, toast])
+  }, [user, toast])
 
   // Mock data for development
   useEffect(() => {

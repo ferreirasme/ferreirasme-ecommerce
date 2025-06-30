@@ -23,7 +23,7 @@ import { useConsultant } from '@/hooks/useConsultant'
 import { useCommissions } from '@/hooks/useCommissions'
 import { useConsent } from '@/hooks/useConsent'
 import { useConsultantStore } from '@/store/consultant-store'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency } from '@/lib/format'
 import {
   Dialog,
   DialogContent,

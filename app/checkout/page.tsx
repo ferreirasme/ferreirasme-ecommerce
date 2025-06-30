@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useCartStore } from "@/store/cart"
 import { useAuthStore } from "@/store/auth"
@@ -41,7 +41,7 @@ interface CheckoutForm {
   paymentMethod: string
 }
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { items, getTotalPrice, clearCart } = useCartStore()
@@ -586,5 +586,13 @@ export default function CheckoutPage() {
         loading={loading}
       />
     </div>
+  )
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={<div>Carregando...</div>}>
+      <CheckoutContent />
+    </Suspense>
   )
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthStore } from '@/store/auth'
@@ -12,7 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
 import { Loader2, Lock, User } from 'lucide-react'
 
-export default function ConsultantLoginPage() {
+function ConsultantLoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirect = searchParams?.get('redirect') || '/consultant/dashboard'
@@ -196,5 +196,13 @@ export default function ConsultantLoginPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+export default function ConsultantLoginPage() {
+  return (
+    <Suspense fallback={<div>Carregando...</div>}>
+      <ConsultantLoginContent />
+    </Suspense>
   )
 }

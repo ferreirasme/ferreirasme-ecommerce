@@ -37,7 +37,7 @@ interface ConsultantStore {
   getActiveClients: () => Client[]
 }
 
-export const useConsultantStore = create<ConsultantStore>(
+export const useConsultantStore = create<ConsultantStore>()(
   persist(
     (set, get) => ({
       // Current consultant

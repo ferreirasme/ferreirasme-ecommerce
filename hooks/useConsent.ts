@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { ConsentType, ConsentStatus, ConsentRecord, ConsentUpdateData } from '@/types/consultant'
-import { useAuthStore } from '@/store/auth-store'
+import { useAuthStore } from '@/store/auth'
 import { useToast } from '@/components/ui/use-toast'
 
 interface UseConsentReturn {
@@ -30,7 +30,7 @@ export function useConsent(): UseConsentReturn {
       // Simulate API call
       const response = await fetch(`/api/consultants/${consultantId}/consents`, {
         headers: {
-          'Authorization': `Bearer ${user?.token}`,
+          // 'Authorization': `Bearer ${user?.token}`, // Token removed from UserProfile
           'Content-Type': 'application/json'
         }
       })
@@ -52,7 +52,7 @@ export function useConsent(): UseConsentReturn {
     } finally {
       setIsLoading(false)
     }
-  }, [user?.token, toast])
+  }, [user, toast])
 
   // Update a specific consent
   const updateConsent = useCallback(async (data: ConsentUpdateData): Promise<ConsentRecord> => {
@@ -76,7 +76,7 @@ export function useConsent(): UseConsentReturn {
       const response = await fetch(`/api/consultants/${data.consultantId}/consents`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${user?.token}`,
+          // 'Authorization': `Bearer ${user?.token}`, // Token removed from UserProfile
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(consentData)
@@ -123,7 +123,7 @@ export function useConsent(): UseConsentReturn {
     } finally {
       setIsLoading(false)
     }
-  }, [user?.token, toast])
+  }, [user, toast])
 
   // Revoke all consents
   const revokeAllConsents = useCallback(async (consultantId: string) => {

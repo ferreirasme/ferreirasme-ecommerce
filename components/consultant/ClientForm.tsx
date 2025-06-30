@@ -26,7 +26,7 @@ const clientSchema = z.object({
     city: z.string().min(2, 'Cidade é obrigatória'),
     state: z.string().min(2, 'Distrito é obrigatório'),
     postalCode: z.string().regex(/^\d{4}-\d{3}$/, 'Código postal inválido'),
-    country: z.string().optional().default('Portugal')
+    country: z.string().min(2, 'País é obrigatório')
   }).optional()
 })
 
@@ -50,7 +50,7 @@ export function ClientForm({ onSubmit, consultantId, initialData, isLoading }: C
     setValue,
     watch
   } = useForm<ClientFormValues>({
-    resolver: zodResolver(clientSchema),
+    // resolver: zodResolver(clientSchema),
     defaultValues: {
       ...initialData,
       address: initialData?.address || {

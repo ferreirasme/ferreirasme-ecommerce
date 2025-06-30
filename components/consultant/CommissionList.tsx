@@ -43,7 +43,7 @@ import {
 } from '@/components/ui/dialog'
 import { format } from 'date-fns'
 import { pt } from 'date-fns/locale'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency } from '@/lib/format'
 
 interface CommissionListProps {
   commissions: Commission[]
