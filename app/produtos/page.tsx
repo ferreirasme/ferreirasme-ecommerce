@@ -42,7 +42,7 @@ interface Product {
 
 function ProductsContent() {
   const searchParams = useSearchParams()
-  const categoria = searchParams.get("categoria")
+  const categoria = searchParams?.get("categoria")
   
   const [products, setProducts] = useState<Product[]>([])
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
