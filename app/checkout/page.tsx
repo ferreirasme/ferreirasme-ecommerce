@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Separator } from "@/components/ui/separator"
+import { PostalCodeInput } from "@/components/forms/postal-code-input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft, CreditCard, Truck, ShieldCheck } from "lucide-react"
 import Link from "next/link"
@@ -323,13 +324,17 @@ export default function CheckoutPage() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="postalCode">Código Postal</Label>
-                      <Input
-                        id="postalCode"
-                        name="postalCode"
-                        placeholder="0000-000"
+                      <PostalCodeInput
                         value={formData.postalCode}
-                        onChange={handleInputChange}
+                        onChange={(value) => setFormData(prev => ({ ...prev, postalCode: value }))}
+                        onAddressFound={(address) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            city: address.municipality || address.locality || prev.city,
+                            // Se o endereço estiver vazio, preencher com a rua encontrada
+                            address: prev.address || address.street || ''
+                          }))
+                        }}
                         required
                       />
                     </div>

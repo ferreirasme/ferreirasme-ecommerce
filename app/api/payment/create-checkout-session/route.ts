@@ -114,14 +114,24 @@ export async function POST(request: NextRequest) {
       total: subtotal + (shipping / 100)
     })
 
+    // Garantir URL base válida
+    const host = request.headers.get('host')
+    const baseUrl = process.env.NEXT_PUBLIC_URL || (host ? `https://${host}` : 'https://ferreirasme-ecommerce.vercel.app')
+    
+    console.log('Base URL configuration:', { 
+      env: process.env.NEXT_PUBLIC_URL, 
+      host, 
+      final: baseUrl 
+    })
+    
     // Criar sessão de checkout
     const sessionConfig: any = {
       payment_method_types: ['card'],
       customer: customer.id,
       line_items: lineItems,
       mode: 'payment',
-      success_url: `${process.env.NEXT_PUBLIC_URL}/checkout/sucesso?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_URL}/checkout`,
+      success_url: `${baseUrl}/checkout/sucesso?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/checkout`,
       metadata: {
         // Limitar tamanho dos metadados (máximo 500 caracteres por chave)
         customer_email: customerInfo.email,
