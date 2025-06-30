@@ -145,8 +145,8 @@ export async function POST(request: NextRequest) {
       success_url: `${baseUrl}/checkout/sucesso?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/checkout`,
       locale: 'pt', // Português para interface do Stripe Checkout
-      // Pré-preencher informações do cliente
-      customer_email: customerInfo.email,
+      // Usar customer ID (não precisa customer_email quando tem customer)
+      // customer_email: customerInfo.email, // Removido - já está no customer
       // Configurações de pagamento
       payment_intent_data: {
         metadata: {
