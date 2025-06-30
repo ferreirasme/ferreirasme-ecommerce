@@ -45,17 +45,36 @@ export default function CheckoutPage() {
   
   const [loading, setLoading] = useState(false)
   const [mbwayDialogOpen, setMbwayDialogOpen] = useState(false)
-  const [formData, setFormData] = useState<CheckoutForm>({
-    email: user?.email || "",
-    firstName: "",
-    lastName: "",
-    phone: "",
-    nif: "",
-    address: "",
-    addressComplement: "",
-    city: "",
-    postalCode: "",
-    paymentMethod: "card"
+  
+  // Carregar dados salvos do localStorage
+  const [formData, setFormData] = useState<CheckoutForm>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('checkoutFormData')
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved)
+          return {
+            ...parsed,
+            email: user?.email || parsed.email || "",
+          }
+        } catch (e) {
+          console.error('Erro ao carregar dados salvos:', e)
+        }
+      }
+    }
+    
+    return {
+      email: user?.email || "",
+      firstName: "",
+      lastName: "",
+      phone: "",
+      nif: "",
+      address: "",
+      addressComplement: "",
+      city: "",
+      postalCode: "",
+      paymentMethod: "card"
+    }
   })
 
   const subtotal = getTotalPrice()
@@ -67,6 +86,13 @@ export default function CheckoutPage() {
       router.push("/carrinho")
     }
   }, [items.length, router])
+  
+  // Salvar dados do formulário no localStorage quando mudarem
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('checkoutFormData', JSON.stringify(formData))
+    }
+  }, [formData])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -295,10 +321,40 @@ export default function CheckoutPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
+                    <PostalCodeInput
+                      value={formData.postalCode}
+                      onChange={(value) => setFormData(prev => ({ ...prev, postalCode: value }))}
+                      onAddressFound={(address) => {
+                        setFormData(prev => ({
+                          ...prev,
+                          city: address.municipality || address.locality || prev.city,
+                          // Preencher com a rua encontrada apenas se estiver vazio
+                          address: prev.address || (address.street ? `${address.street}, ` : '')
+                        }))
+                      }}
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="city">Cidade</Label>
+                    <Input
+                      id="city"
+                      name="city"
+                      value={formData.city}
+                      onChange={handleInputChange}
+                      required
+                      readOnly
+                      className="bg-muted"
+                    />
+                  </div>
+                  
+                  <div>
                     <Label htmlFor="address">Morada</Label>
                     <Input
                       id="address"
                       name="address"
+                      placeholder="Rua e número"
                       value={formData.address}
                       onChange={handleInputChange}
                       required
@@ -314,34 +370,6 @@ export default function CheckoutPage() {
                       value={formData.addressComplement}
                       onChange={handleInputChange}
                     />
-                  </div>
-                  
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="city">Cidade</Label>
-                      <Input
-                        id="city"
-                        name="city"
-                        value={formData.city}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <PostalCodeInput
-                        value={formData.postalCode}
-                        onChange={(value) => setFormData(prev => ({ ...prev, postalCode: value }))}
-                        onAddressFound={(address) => {
-                          setFormData(prev => ({
-                            ...prev,
-                            city: address.municipality || address.locality || prev.city,
-                            // Se o endereço estiver vazio, preencher com a rua encontrada
-                            address: prev.address || address.street || ''
-                          }))
-                        }}
-                        required
-                      />
-                    </div>
                   </div>
                 </CardContent>
               </Card>
