@@ -4,7 +4,7 @@ import { stripe } from '@/lib/stripe/server'
 export async function GET(request: NextRequest) {
   try {
     // Teste 1: Verificar se conseguimos acessar o Stripe
-    let test1 = { status: 'failed', error: null }
+    let test1: any = { status: 'failed', error: null }
     try {
       const account = await stripe.accounts.retrieve()
       test1 = { status: 'success', error: null, accountId: account.id }
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Teste 2: Criar um produto simples
-    let test2 = { status: 'failed', error: null }
+    let test2: any = { status: 'failed', error: null }
     try {
       const product = await stripe.products.create({
         name: 'Produto Teste',
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Teste 3: Criar uma sessão mínima
-    let test3 = { status: 'failed', error: null }
+    let test3: any = { status: 'failed', error: null }
     try {
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
