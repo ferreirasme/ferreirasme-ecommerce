@@ -61,11 +61,12 @@ export default function ImportExcelPage() {
         try {
           const name = row['Nome completo'] || ''
           const email = row['E-mail'] || ''
-          const phone = row['Telefone'] || ''
+          const phone = row['Telefone'] || 'A informar' // Valor padrão se não tiver telefone
           const city = row['Cidade'] || ''
           const country = row['País'] || 'Portugal'
 
           if (!name || !email) {
+            console.log(`Pulando registro sem nome ou email: ${row['Nome completo']}`)
             continue
           }
 
