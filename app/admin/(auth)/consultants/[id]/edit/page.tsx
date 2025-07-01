@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { ArrowLeft, Save, Mail, Key, User, Phone, MapPin, CreditCard, BarChart, History } from "lucide-react"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
-import { PostalCodeInput } from "@/components/ui/postal-code-input"
+import { PostalCodeInput } from "@/components/forms/postal-code-input"
 
 interface ConsultantData {
   id: string
@@ -63,24 +63,31 @@ interface ConsultantData {
   partner_share?: boolean
 }
 
-export default function EditConsultantPage({ params }: { params: { id: string } }) {
+export default function EditConsultantPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
   const supabase = createClientComponentClient()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [consultant, setConsultant] = useState<ConsultantData | null>(null)
   const [activeTab, setActiveTab] = useState("personal")
+  const [consultantId, setConsultantId] = useState<string | null>(null)
 
   useEffect(() => {
-    fetchConsultant()
-  }, [params.id])
+    params.then(p => setConsultantId(p.id))
+  }, [params])
+
+  useEffect(() => {
+    if (consultantId) {
+      fetchConsultant()
+    }
+  }, [consultantId])
 
   const fetchConsultant = async () => {
     try {
       const { data, error } = await supabase
         .from('consultants')
         .select('*')
-        .eq('id', params.id)
+        .eq('id', consultantId)
         .single()
 
       if (error) throw error
@@ -88,7 +95,6 @@ export default function EditConsultantPage({ params }: { params: { id: string } 
     } catch (error) {
       console.error('Error fetching consultant:', error)
       toast.error('Erro ao carregar consultora')
-      router.push('/admin/consultants')
     } finally {
       setLoading(false)
     }
@@ -125,12 +131,12 @@ export default function EditConsultantPage({ params }: { params: { id: string } 
           notes: consultant.notes,
           updated_at: new Date().toISOString()
         })
-        .eq('id', params.id)
+        .eq('id', consultantId)
 
       if (error) throw error
 
       toast.success('Consultora atualizada com sucesso!')
-      router.push(`/admin/consultants/${params.id}`)
+      router.push(`/admin/consultants/${consultantId}`)
     } catch (error) {
       console.error('Error updating consultant:', error)
       toast.error('Erro ao atualizar consultora')
@@ -167,7 +173,7 @@ export default function EditConsultantPage({ params }: { params: { id: string } 
           status: newStatus,
           updated_at: new Date().toISOString()
         })
-        .eq('id', params.id)
+        .eq('id', consultantId)
 
       if (error) throw error
 
@@ -190,14 +196,14 @@ export default function EditConsultantPage({ params }: { params: { id: string } 
     <div className="container mx-auto p-6">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
-          <Link href={`/admin/consultants/${params.id}`}>
+          <Link href={`/admin/consultants/${consultantId}`}>
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
           <div>
             <h1 className="text-3xl font-bold">Editar Consultora</h1>
-            <p className="text-gray-600">{consultant.full_name} • {consultant.code}</p>
+            <p className="text-gray-600">{consultant?.full_name} • {consultant?.code}</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -558,7 +564,7 @@ export default function EditConsultantPage({ params }: { params: { id: string } 
             </Button>
           </div>
           <div className="flex gap-2">
-            <Link href={`/admin/consultants/${params.id}`}>
+            <Link href={`/admin/consultants/${consultantId}`}>
               <Button variant="outline">Cancelar</Button>
             </Link>
             <Button type="submit" disabled={saving}>

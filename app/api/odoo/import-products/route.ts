@@ -233,7 +233,7 @@ export async function POST(request: NextRequest) {
         const slug = generateSlug(product.name)
 
         // Prepare product data
-        const productData = {
+        const productData: any = {
           odoo_id: product.id,
           name: product.name,
           slug: slug,

@@ -53,7 +53,7 @@ interface Category {
 }
 
 interface ProductCategory {
-  category: Category
+  category: Category | null
 }
 
 interface Product {
@@ -189,7 +189,15 @@ export default function ProductsPage() {
 
       console.log('Products data:', data)
 
-      setProducts(data || [])
+      // Map the data to match our Product interface
+      const mappedProducts: Product[] = (data || []).map((item: any) => ({
+        ...item,
+        product_categories: item.product_categories?.map((pc: any) => ({
+          category: pc.category ? pc.category[0] || null : null
+        })) || []
+      }))
+      
+      setProducts(mappedProducts)
       setTotalPages(Math.ceil((count || 0) / itemsPerPage))
       setError(null)
     } catch (error: any) {
@@ -427,12 +435,14 @@ export default function ProductsPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
-                          {product.product_categories?.map((pc) => (
-                            <Badge key={pc.category.id} variant="outline" className="text-xs">
-                              {pc.category.name}
-                            </Badge>
-                          ))}
-                          {(!product.product_categories || product.product_categories.length === 0) && (
+                          {product.product_categories?.map((pc, index) => 
+                            pc.category ? (
+                              <Badge key={pc.category.id} variant="outline" className="text-xs">
+                                {pc.category.name}
+                              </Badge>
+                            ) : null
+                          )}
+                          {(!product.product_categories || product.product_categories.filter(pc => pc.category).length === 0) && (
                             <span className="text-sm text-muted-foreground">-</span>
                           )}
                         </div>

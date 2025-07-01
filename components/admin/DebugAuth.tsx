@@ -46,7 +46,7 @@ export function DebugAuth() {
             .rpc('check_admin_auth')
 
           if (!debugError && debugData) {
-            setAuthInfo(prev => ({ ...prev, debug: debugData[0] }))
+            setAuthInfo((prev: any) => ({ ...prev, debug: debugData[0] }))
           }
         }
       } catch (error: any) {
