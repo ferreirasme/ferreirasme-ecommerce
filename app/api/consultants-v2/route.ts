@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { checkIsAdmin } from "@/lib/security/check-admin"
 
 export async function POST(request: NextRequest) {
@@ -11,6 +12,7 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = await createClient()
+    const adminSupabase = createAdminClient() // Use admin client for creating users
     const body = await request.json()
 
     // Validate required fields
@@ -27,8 +29,8 @@ export async function POST(request: NextRequest) {
     // Generate consultant code
     const consultantCode = `CONS${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`
 
-    // Create auth user with service role
-    const { data: { user }, error: authError } = await supabase.auth.admin.createUser({
+    // Create auth user with admin client
+    const { data: { user }, error: authError } = await adminSupabase.auth.admin.createUser({
       email: body.email,
       password: body.password || Math.random().toString(36).slice(-8),
       email_confirm: true,
@@ -92,7 +94,7 @@ export async function POST(request: NextRequest) {
       console.error('Consultant error:', consultantError)
       
       // Try to clean up the created auth user
-      await supabase.auth.admin.deleteUser(user.id)
+      await adminSupabase.auth.admin.deleteUser(user.id)
       
       return NextResponse.json(
         { error: `Erro ao criar consultora: ${consultantError.message}` },
