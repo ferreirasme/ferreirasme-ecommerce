@@ -82,11 +82,19 @@ export default function EditConsultantPage({ params }: { params: Promise<{ id: s
           .eq('id', id)
           .single()
 
-        if (error) throw error
+        if (error) {
+          console.error('Supabase error:', error)
+          throw error
+        }
+        
+        if (!data) {
+          throw new Error('Consultora não encontrada')
+        }
+        
         setConsultant(data)
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching consultant:', error)
-        toast.error('Erro ao carregar consultora')
+        toast.error(error.message || 'Erro ao carregar consultora')
       } finally {
         setLoading(false)
       }

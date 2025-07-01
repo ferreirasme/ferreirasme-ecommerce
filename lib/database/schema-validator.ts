@@ -16,10 +16,6 @@ export const tableSchemas = {
       'metadata',
       'created_at',
       'updated_at',
-      'odoo_image',
-      'last_stock_update',
-      'import_date',
-      'description_sale',
       'odoo_id'
     ],
     required: ['name', 'slug', 'price'],

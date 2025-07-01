@@ -66,7 +66,6 @@ interface Product {
   stock_quantity: number
   featured: boolean
   active: boolean
-  odoo_image: string | null
   odoo_id: number | null
   created_at: string
   updated_at: string
@@ -142,7 +141,6 @@ export default function ProductsPage() {
           stock_quantity,
           featured,
           active,
-          odoo_image,
           odoo_id,
           created_at,
           updated_at
@@ -237,11 +235,8 @@ export default function ProductsPage() {
   }
 
   const getProductImage = (product: Product) => {
-    // Use odoo_image if available
-    if (product.odoo_image) {
-      return `data:image/jpeg;base64,${product.odoo_image}`
-    }
-    
+    // For now, products don't have images in the database
+    // This will be updated when we add proper image support
     return null
   }
 
