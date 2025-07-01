@@ -53,6 +53,7 @@ export default function ImportExcelPage() {
 
       let created = 0
       let errors = 0
+      let alreadyExists = 0
       const errorDetails: any[] = []
       const totalItems = jsonData.length
 
@@ -106,8 +107,12 @@ export default function ImportExcelPage() {
           if (response.ok) {
             created++
           } else {
-            errors++
-            errorDetails.push({ name, error: result.error })
+            if (result.error && result.error.includes('já está cadastrada')) {
+              alreadyExists++
+            } else {
+              errors++
+              errorDetails.push({ name, error: result.error })
+            }
           }
         } catch (error: any) {
           errors++
@@ -120,11 +125,15 @@ export default function ImportExcelPage() {
         total: jsonData.length,
         created,
         errors,
+        alreadyExists,
         errorDetails: errorDetails.slice(0, 5)
       })
 
       if (created > 0) {
         toast.success(`${created} consultoras importadas com sucesso!`)
+      }
+      if (alreadyExists > 0) {
+        toast.info(`${alreadyExists} consultoras já estavam cadastradas`)
       }
       if (errors > 0) {
         toast.error(`${errors} erros ao importar consultoras`)
@@ -147,6 +156,8 @@ export default function ImportExcelPage() {
 
     setLoading(true)
     setResults(null)
+    setProgress(0)
+    setProgressMessage('Lendo arquivo Excel...')
 
     try {
       // Read file
@@ -158,29 +169,91 @@ export default function ImportExcelPage() {
 
       console.log('Products data:', jsonData)
 
-      // For now, just show a summary
-      const productsData = jsonData.map((row: any) => ({
-        name: row['Nome'] || '',
-        price: parseFloat(row['Preços de venda'] || '0'),
-        cost: parseFloat(row['Custo'] || '0'),
-        stockOnHand: parseInt(row['Quantidade em mãos'] || '0'),
-        stockForecast: parseInt(row['Quantidade prevista'] || '0'),
-        isFavorite: row['Favorito'] === true
-      }))
+      let created = 0
+      let errors = 0
+      let alreadyExists = 0
+      const errorDetails: any[] = []
+      const totalItems = jsonData.length
+
+      for (let i = 0; i < jsonData.length; i++) {
+        const row = jsonData[i]
+        
+        try {
+          const name = row['Nome'] || ''
+          const price = parseFloat(row['Preços de venda'] || row['Preço de venda'] || '0')
+          const cost = parseFloat(row['Custo'] || '0')
+          const stockOnHand = parseInt(row['Quantidade em mãos'] || '0')
+          const stockForecast = parseInt(row['Quantidade prevista'] || '0')
+          const isFavorite = row['Favorito'] === true || row['Favorito'] === 'true'
+          
+          if (!name) {
+            console.log(`Pulando produto sem nome`)
+            continue
+          }
+
+          // Update progress
+          const currentProgress = Math.round(((i + 1) / totalItems) * 100)
+          setProgress(currentProgress)
+          setProgressMessage(`Processando ${i + 1} de ${totalItems} produtos...`)
+
+          const response = await fetch('/api/products/import-excel', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name,
+              price,
+              cost,
+              stockOnHand,
+              stockForecast,
+              stock: stockForecast || stockOnHand,
+              isFavorite
+            })
+          })
+
+          const result = await response.json()
+
+          if (response.ok) {
+            created++
+          } else {
+            if (result.error && result.error.includes('já existe')) {
+              alreadyExists++
+            } else {
+              errors++
+              errorDetails.push({ name, error: result.error })
+            }
+          }
+          
+        } catch (error: any) {
+          errors++
+          errorDetails.push({ name: row['Nome'], error: error.message })
+        }
+      }
 
       setResults({
         type: 'products',
-        total: productsData.length,
-        data: productsData.slice(0, 10),
-        message: 'Produtos processados. Use a importação da Odoo para adicionar ao sistema.'
+        total: jsonData.length,
+        created,
+        errors,
+        alreadyExists,
+        errorDetails: errorDetails.slice(0, 5)
       })
 
-      toast.success(`${productsData.length} produtos processados`)
+      if (created > 0) {
+        toast.success(`${created} produtos importados com sucesso!`)
+      }
+      if (alreadyExists > 0) {
+        toast.info(`${alreadyExists} produtos já estavam cadastrados`)
+      }
+      if (errors > 0) {
+        toast.error(`${errors} erros ao importar produtos`)
+      }
 
     } catch (error: any) {
       toast.error('Erro ao processar arquivo: ' + error.message)
     } finally {
       setLoading(false)
+      setProgress(0)
+      setProgressMessage('')
     }
   }
 
@@ -284,8 +357,15 @@ export default function ImportExcelPage() {
               className="w-full"
             >
               <Upload className="mr-2 h-4 w-4" />
-              Processar Produtos
+              {loading ? 'Importando...' : 'Importar Produtos'}
             </Button>
+
+            {loading && progressMessage && (
+              <div className="space-y-2">
+                <p className="text-sm text-gray-600">{progressMessage}</p>
+                <Progress value={progress} className="w-full" />
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -299,7 +379,7 @@ export default function ImportExcelPage() {
           <CardContent>
             {results.type === 'consultants' ? (
               <div className="space-y-4">
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-4 gap-4">
                   <div className="text-center">
                     <p className="text-2xl font-bold">{results.total}</p>
                     <p className="text-sm text-gray-600">Total de registros</p>
@@ -307,6 +387,10 @@ export default function ImportExcelPage() {
                   <div className="text-center">
                     <p className="text-2xl font-bold text-green-600">{results.created}</p>
                     <p className="text-sm text-gray-600">Importados</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-blue-600">{results.alreadyExists || 0}</p>
+                    <p className="text-sm text-gray-600">Já cadastrados</p>
                   </div>
                   <div className="text-center">
                     <p className="text-2xl font-bold text-red-600">{results.errors}</p>
@@ -329,16 +413,32 @@ export default function ImportExcelPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                <p>{results.message}</p>
-                <p className="text-lg">Total de produtos: <strong>{results.total}</strong></p>
-                
-                {results.data && (
-                  <div>
-                    <p className="font-medium mb-2">Amostra dos produtos:</p>
+                <div className="grid grid-cols-4 gap-4">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold">{results.total}</p>
+                    <p className="text-sm text-gray-600">Total de produtos</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-green-600">{results.created}</p>
+                    <p className="text-sm text-gray-600">Importados</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-blue-600">{results.alreadyExists || 0}</p>
+                    <p className="text-sm text-gray-600">Já cadastrados</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-red-600">{results.errors}</p>
+                    <p className="text-sm text-gray-600">Erros</p>
+                  </div>
+                </div>
+
+                {results.errorDetails && results.errorDetails.length > 0 && (
+                  <div className="mt-4">
+                    <p className="font-medium mb-2">Primeiros erros:</p>
                     <div className="space-y-1">
-                      {results.data.slice(0, 5).map((p: any, i: number) => (
-                        <p key={i} className="text-sm">
-                          {p.name} - R$ {p.price.toFixed(2)} (Estoque: {p.stockForecast || p.stockOnHand || 0})
+                      {results.errorDetails.map((e: any, i: number) => (
+                        <p key={i} className="text-sm text-red-600">
+                          {e.name}: {e.error}
                         </p>
                       ))}
                     </div>
