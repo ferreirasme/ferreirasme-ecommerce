@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { checkIsAdmin } from "@/lib/security/check-admin"
+import { filterValidColumns } from "@/lib/database/schema-validator"
 
 // Helper function to generate product SKU
 function generateProductSKU(): string {
@@ -75,26 +76,32 @@ export async function POST(request: NextRequest) {
       // Add random suffix to slug if it already exists
       const newSlug = `${slug}-${Math.random().toString(36).substring(2, 6)}`
       
+      // Create product data
+      const productData = {
+        name,
+        slug: newSlug,
+        sku,
+        description,
+        price: price || 0,
+        sale_price: cost > 0 && cost < price ? cost : null,
+        stock_quantity: stockQuantity,
+        status: stockQuantity > 0 ? 'active' : 'out_of_stock',
+        active: true,
+        featured: isFavorite,
+        metadata: {
+          imported_from: 'Excel',
+          import_date: new Date().toISOString(),
+          original_data: body
+        }
+      }
+
+      // Filter to only valid columns
+      const validProductData = filterValidColumns('products', productData)
+      
       // Create product with modified slug
       const { data: product, error: productError } = await supabase
         .from('products')
-        .insert({
-          name,
-          slug: newSlug,
-          sku,
-          description,
-          price: price || 0,
-          sale_price: cost > 0 && cost < price ? cost : null,
-          stock_quantity: stockQuantity,
-          status: stockQuantity > 0 ? 'active' : 'out_of_stock',
-          active: true,
-          featured: isFavorite,
-          metadata: {
-            imported_from: 'Excel',
-            import_date: new Date().toISOString(),
-            original_data: body
-          }
-        })
+        .insert(validProductData)
         .select()
         .single()
 
@@ -113,27 +120,33 @@ export async function POST(request: NextRequest) {
       }, { status: 201 })
     }
 
+    // Create product data
+    const productData = {
+      name,
+      slug,
+      sku,
+      description,
+      price: price || 0,
+      sale_price: cost > 0 && cost < price ? cost : null,
+      stock_quantity: stockQuantity,
+      status: stockQuantity > 0 ? 'active' : 'out_of_stock',
+      active: true,
+      featured: isFavorite,
+      metadata: {
+        imported_from: 'Excel',
+        import_date: new Date().toISOString(),
+        original_data: body,
+        cost: cost // Guardar custo no metadata já que não temos coluna para isso
+      }
+    }
+
+    // Filter to only valid columns
+    const validProductData = filterValidColumns('products', productData)
+    
     // Create product
     const { data: product, error: productError } = await supabase
       .from('products')
-      .insert({
-        name,
-        slug,
-        sku,
-        description,
-        price: price || 0,
-        sale_price: cost > 0 && cost < price ? cost : null,
-        standard_price: cost || null,
-        stock_quantity: stockQuantity,
-        status: stockQuantity > 0 ? 'active' : 'out_of_stock',
-        active: true,
-        featured: isFavorite,
-        metadata: {
-          imported_from: 'Excel',
-          import_date: new Date().toISOString(),
-          original_data: body
-        }
-      })
+      .insert(validProductData)
       .select()
       .single()
 
