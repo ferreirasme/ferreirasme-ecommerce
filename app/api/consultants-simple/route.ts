@@ -35,6 +35,9 @@ export async function POST(request: NextRequest) {
     // Opção 1: Criar consultora SEM criar usuário Auth primeiro
     // O usuário será criado quando a consultora fizer o primeiro acesso
     
+    // Verificar se precisamos criar com Auth ou sem
+    const shouldCreateAuth = false // Desabilitado por enquanto devido ao problema de URL
+    
     // Gerar um ID temporário para a consultora
     const tempUserId = crypto.randomUUID()
     
