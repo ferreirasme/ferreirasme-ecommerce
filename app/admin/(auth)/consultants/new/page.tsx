@@ -46,7 +46,7 @@ export default function NewConsultantPage() {
     setLoading(true)
 
     try {
-      const response = await fetch('/api/consultants', {
+      const response = await fetch('/api/consultants-v2', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
