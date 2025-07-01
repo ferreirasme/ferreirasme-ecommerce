@@ -9,15 +9,15 @@ FOR ALL TO authenticated
 USING (
   EXISTS (
     SELECT 1 FROM admins
-    WHERE admins.user_id = auth.uid()
-    AND admins.is_active = true
+    WHERE admins.id = auth.uid()
+    AND admins.active = true
   )
 )
 WITH CHECK (
   EXISTS (
     SELECT 1 FROM admins
-    WHERE admins.user_id = auth.uid()
-    AND admins.is_active = true
+    WHERE admins.id = auth.uid()
+    AND admins.active = true
   )
 );
 
