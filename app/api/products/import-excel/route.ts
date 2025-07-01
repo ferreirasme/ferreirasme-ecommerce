@@ -85,7 +85,6 @@ export async function POST(request: NextRequest) {
           description,
           price: price || 0,
           sale_price: cost > 0 && cost < price ? cost : null,
-          standard_price: cost || null,
           stock_quantity: stockQuantity,
           status: stockQuantity > 0 ? 'active' : 'out_of_stock',
           active: true,

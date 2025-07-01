@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
+import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
 import { Upload, Download, Users, Package, AlertCircle, CheckCircle, XCircle } from "lucide-react"
 import * as XLSX from 'xlsx'
@@ -18,6 +19,7 @@ export default function ImportExcelPage() {
   const [results, setResults] = useState<any>(null)
   const [progress, setProgress] = useState(0)
   const [progressMessage, setProgressMessage] = useState('')
+  const [testMode, setTestMode] = useState(true) // Modo de teste ativado por padrão
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'consultants' | 'products') => {
     const file = e.target.files?.[0]
@@ -55,10 +57,15 @@ export default function ImportExcelPage() {
       let errors = 0
       let alreadyExists = 0
       const errorDetails: any[] = []
-      const totalItems = jsonData.length
+      const itemsToProcess = testMode ? jsonData.slice(0, 10) : jsonData
+      const totalItems = itemsToProcess.length
 
-      for (let i = 0; i < jsonData.length; i++) {
-        const row = jsonData[i]
+      if (testMode) {
+        toast.info(`Modo de teste: processando apenas ${itemsToProcess.length} primeiras consultoras`)
+      }
+
+      for (let i = 0; i < itemsToProcess.length; i++) {
+        const row = itemsToProcess[i]
         try {
           const name = row['Nome completo'] || ''
           const email = row['E-mail'] || ''
@@ -173,10 +180,15 @@ export default function ImportExcelPage() {
       let errors = 0
       let alreadyExists = 0
       const errorDetails: any[] = []
-      const totalItems = jsonData.length
+      const itemsToProcess = testMode ? jsonData.slice(0, 10) : jsonData
+      const totalItems = itemsToProcess.length
 
-      for (let i = 0; i < jsonData.length; i++) {
-        const row = jsonData[i]
+      if (testMode) {
+        toast.info(`Modo de teste: processando apenas ${itemsToProcess.length} primeiros produtos`)
+      }
+
+      for (let i = 0; i < itemsToProcess.length; i++) {
+        const row = itemsToProcess[i]
         
         try {
           const name = row['Nome'] || ''
@@ -273,6 +285,25 @@ export default function ImportExcelPage() {
           Para produtos, use "Produto (product.template).xlsx".
         </AlertDescription>
       </Alert>
+
+      {/* Modo de Teste */}
+      <Card className="mb-6">
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <Label htmlFor="test-mode">Modo de Teste</Label>
+              <p className="text-sm text-gray-600">
+                Processa apenas 10 primeiros registros para teste rápido
+              </p>
+            </div>
+            <Switch 
+              id="test-mode"
+              checked={testMode}
+              onCheckedChange={setTestMode}
+            />
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Import Consultants */}
