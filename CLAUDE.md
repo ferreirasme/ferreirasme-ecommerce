@@ -57,96 +57,116 @@ O projeto usa `.env.local` com as seguintes configurações:
 - IP WSL: `http://172.18.59.172:3005`
 - Produção: https://ferreirasme-ecommerce.vercel.app
 
-## Status do Projeto (Atualizado em 30/06/2025)
+## Status do Projeto (Atualizado em 01/07/2025)
 
 ### Implementações Concluídas
 
 1. **Sistema de Consultoras e Comissões**
    - Tabelas: consultants, clients, consultant_commissions, consent_records, audit_logs
    - LGPD compliance implementado
-   - Sistema de comissões automáticas
+   - Sistema de comissões automáticas (45 dias)
    - Interface completa para gestão
+   - Upload de fotos de consultoras implementado
 
 2. **Sistema de Administradores (Separado)**
    - Tabelas: admins, admin_permissions, admin_logs
    - Área administrativa separada das consultoras
    - Dashboard com métricas gerais
 
-3. **Integrações de Pagamento**
+3. **Área Administrativa Completa**
+   - ✅ Gestão de pedidos com filtros e exportação
+   - ✅ Detalhes de pedidos com gestão de status
+   - ✅ Gestão de categorias hierárquicas
+   - ✅ Criação e edição de produtos
+   - ✅ Configurações do sistema
+   - ✅ Relatórios com gráficos (Recharts)
+   - ✅ Importação do Excel
+   - ✅ Importação do Odoo
+
+4. **Integrações de Pagamento**
    - Stripe com suporte a Klarna
    - Sistema de checkout completo
    - Rastreamento de pedidos com consultoras
 
-4. **Sistema de Email**
+5. **Sistema de Email**
    - Notificações para consultoras
    - Emails de boas-vindas
    - Relatórios mensais de comissões
 
-5. **Correções e Melhorias**
-   - Login com OTP (8 caracteres)
-   - Preenchimento automático de endereço por código postal
-   - Compatibilidade com Next.js 15
+6. **Correções e Melhorias Recentes**
+   - ✅ Login com OTP (8 caracteres)
+   - ✅ Preenchimento automático de endereço por código postal
+   - ✅ Compatibilidade com Next.js 15
+   - ✅ Problema de travamento do Supabase resolvido
+   - ✅ Correção de colunas faltantes no banco (odoo_image, main_image_url, status)
+   - ✅ Correção de async params no Next.js 15
+   - ✅ Correção de erros TypeScript no build
+   - ✅ Correção do erro de inicialização do Zod (transpilePackages)
 
-### Problema Atual: Travamento do Navegador
+### Problema Atual: Erro de Inicialização do Zod
 
-**Situação**: As páginas que usam Supabase estão travando o navegador em produção.
+**Status**: Em resolução
 
-**Páginas que funcionam**:
-- `/hello` - Página simples sem Supabase
-- `/admin-login-static` - Login sem integração Supabase
+**Erro**: "Cannot access 'z' before initialization" em produção
 
-**Páginas que travam**:
-- `/admin/login-simple` - Usa Supabase client
-- `/admin/login` - Usa AuthProvider
-- Outras páginas com autenticação
+**Soluções Aplicadas**:
+1. ✅ Mudança de `import * as z from 'zod'` para `import { z } from 'zod'`
+2. ✅ Adicionado `transpilePackages: ['zod']` no next.config.ts
+3. ✅ Criado arquivo central de exportação em lib/zod.ts
 
-**Diagnóstico**:
-- Problema relacionado ao Supabase client em produção
-- Possível loop infinito na inicialização
-- AuthProvider causava loops no layout.tsx
+**Se o erro persistir**:
+- Mudar todos os imports para usar o arquivo centralizado `@/lib/zod`
 
-**Soluções Tentadas**:
-1. Simplificação do layout.tsx (removido AuthProvider)
-2. Desabilitação temporária do middleware
-3. Criação de páginas de teste isoladas
-4. Uso de IP direto no WSL (172.18.59.172)
+### Pendências Importantes
 
-### Próximos Passos
+1. **Migrations do Banco de Dados**
+   - Aplicar migrations para colunas faltantes em produção
+   - Adicionar campos Odoo (odoo_id, etc)
 
-1. **Resolver problema do Supabase em produção**
-   - Investigar configuração das variáveis de ambiente no Vercel
-   - Testar inicialização do Supabase client
-   - Verificar compatibilidade com Next.js 15
+2. **Importação de Fotos**
+   - Importar fotos de consultoras do Odoo
+   - Importar fotos de produtos do Odoo
 
-2. **Após resolver o travamento**:
-   - Restaurar AuthProvider gradualmente
-   - Reabilitar middleware com configurações corretas
-   - Testar sistema de admin completo
-
-3. **Funcionalidades pendentes do TODO original**:
-   - Sistema de gestão de pedidos para administradores
-   - Sistema de administração de produtos
+3. **Funcionalidades a Implementar**
+   - Sistema de busca global no admin
+   - Envio de email de boas-vindas para consultoras
    - Otimização do carregamento de códigos postais
 
-### Comandos Úteis para Debug
+4. **Testes em Produção**
+   - Testar criação de consultora
+   - Testar importação da Odoo
+   - Testar fluxo completo de admin
+   - Testar fluxo completo de consultoras
+
+### Arquivos Importantes do Projeto
+
+- `/CLAUDE.md` - Este arquivo (documentação principal)
+- `/lib/database/schema-validator.ts` - Validação de colunas do banco
+- `/components/admin/AdminSidebar.tsx` - Menu lateral do admin
+- `/lib/zod.ts` - Exportação centralizada do Zod
+- `/next.config.ts` - Configurações do Next.js (transpilePackages)
+
+### Comandos Úteis
 
 ```bash
-# Verificar logs do Supabase
-npx supabase db dump
-
-# Testar build local
+# Build e teste local
 npm run build
 
-# Verificar variáveis de ambiente
-env | grep SUPABASE
+# Limpar cache do Next.js
+rm -rf .next
 
-# Logs do Vercel
-vercel logs
+# Testar importação do Odoo
+npm run odoo:test
+
+# Testar importação do Excel
+npm run excel:preview
+
+# Aplicar migrations
+Acessar: https://ferreirasme-ecommerce.vercel.app/api/run-migrations
 ```
 
-### URLs de Teste
+### URLs de Referência
 
-- https://ferreirasme-ecommerce.vercel.app/hello (funciona)
-- https://ferreirasme-ecommerce.vercel.app/admin-login-static (funciona)
-- https://ferreirasme-ecommerce.vercel.app/test-supabase-init (para testar)
-- https://ferreirasme-ecommerce.vercel.app/admin-login-debug (para testar)
+- Produção: https://ferreirasme-ecommerce.vercel.app
+- Admin: https://ferreirasme-ecommerce.vercel.app/admin/dashboard
+- Consultoras: https://ferreirasme-ecommerce.vercel.app/consultant/dashboard
