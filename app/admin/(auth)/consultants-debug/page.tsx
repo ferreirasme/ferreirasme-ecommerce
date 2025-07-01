@@ -43,7 +43,7 @@ export default function ConsultantsDebugPage() {
         .eq('email', user.email)
         .single()
 
-      setAuthStatus(prev => ({
+      setAuthStatus((prev: any) => ({
         ...prev,
         isAdmin: !!adminData,
         adminData: adminData,
