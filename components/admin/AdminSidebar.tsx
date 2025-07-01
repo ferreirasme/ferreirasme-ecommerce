@@ -14,7 +14,8 @@ import {
   LogOut,
   Shield,
   Download,
-  Upload
+  Upload,
+  FolderTree
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -28,6 +29,7 @@ const navigation = [
   { name: "Clientes", href: "/admin/clients", icon: Users },
   { name: "Pedidos", href: "/admin/orders", icon: ShoppingBag },
   { name: "Produtos", href: "/admin/products", icon: Package },
+  { name: "Categorias", href: "/admin/categories", icon: FolderTree },
   { name: "Comissões", href: "/admin/commissions", icon: DollarSign },
   { name: "Relatórios", href: "/admin/reports", icon: BarChart3 },
   { name: "Importar Odoo", href: "/admin/import-odoo", icon: Download },
