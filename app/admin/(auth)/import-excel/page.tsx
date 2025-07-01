@@ -208,7 +208,7 @@ export default function ImportExcelPage() {
           setProgress(currentProgress)
           setProgressMessage(`Processando ${i + 1} de ${totalItems} produtos...`)
 
-          const response = await fetch('/api/products/import-excel-v2', {
+          const response = await fetch('/api/products/import-excel-v3', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
