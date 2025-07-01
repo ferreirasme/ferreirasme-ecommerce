@@ -46,7 +46,7 @@ export default function NewConsultantPage() {
     setLoading(true)
 
     try {
-      const response = await fetch('/api/consultants-v2', {
+      const response = await fetch('/api/consultants-simple', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -63,8 +63,22 @@ export default function NewConsultantPage() {
         throw new Error(data.error || 'Erro ao criar consultora')
       }
 
-      toast.success('Consultora criada com sucesso!')
-      router.push('/admin/consultants')
+      if (data.message) {
+        toast.success(data.message)
+      } else {
+        toast.success('Consultora criada com sucesso!')
+      }
+      
+      // Mostrar o código da consultora
+      if (data.consultant?.code) {
+        toast.info(`Código da consultora: ${data.consultant.code}`, {
+          duration: 10000 // Mostrar por 10 segundos
+        })
+      }
+      
+      setTimeout(() => {
+        router.push('/admin/consultants')
+      }, 2000)
     } catch (error: any) {
       console.error('Error creating consultant:', error)
       toast.error(error.message || 'Erro ao criar consultora')
