@@ -42,7 +42,7 @@ export default function ImportExcelPage() {
       const workbook = XLSX.read(data, { type: 'array' })
       const sheetName = workbook.SheetNames[0]
       const worksheet = workbook.Sheets[sheetName]
-      const jsonData = XLSX.utils.sheet_to_json(worksheet)
+      const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[]
 
       console.log('Consultants data:', jsonData)
 
@@ -145,7 +145,7 @@ export default function ImportExcelPage() {
       const workbook = XLSX.read(data, { type: 'array' })
       const sheetName = workbook.SheetNames[0]
       const worksheet = workbook.Sheets[sheetName]
-      const jsonData = XLSX.utils.sheet_to_json(worksheet)
+      const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[]
 
       console.log('Products data:', jsonData)
 

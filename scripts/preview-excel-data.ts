@@ -10,7 +10,7 @@ function previewConsultants(filePath: string) {
     const workbook = XLSX.readFile(filePath)
     const sheetName = workbook.SheetNames[0]
     const worksheet = workbook.Sheets[sheetName]
-    const data = XLSX.utils.sheet_to_json(worksheet)
+    const data = XLSX.utils.sheet_to_json(worksheet) as any[]
     
     console.log(`Total de registros: ${data.length}`)
     console.log('\nColunas encontradas:')
@@ -41,7 +41,7 @@ function previewProducts(filePath: string) {
     const workbook = XLSX.readFile(filePath)
     const sheetName = workbook.SheetNames[0]
     const worksheet = workbook.Sheets[sheetName]
-    const data = XLSX.utils.sheet_to_json(worksheet)
+    const data = XLSX.utils.sheet_to_json(worksheet) as any[]
     
     console.log(`Total de produtos: ${data.length}`)
     console.log('\nColunas encontradas:')

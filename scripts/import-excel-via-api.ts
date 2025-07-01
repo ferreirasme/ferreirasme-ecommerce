@@ -38,7 +38,7 @@ async function importConsultantsViaAPI() {
     const workbook = XLSX.readFile(filePath)
     const sheetName = workbook.SheetNames[0]
     const worksheet = workbook.Sheets[sheetName]
-    const data = XLSX.utils.sheet_to_json(worksheet)
+    const data = XLSX.utils.sheet_to_json(worksheet) as any[]
     
     console.log(`📊 Total de registros encontrados: ${data.length}`)
     
@@ -133,7 +133,7 @@ async function importProductsSimple() {
     const workbook = XLSX.readFile(filePath)
     const sheetName = workbook.SheetNames[0]
     const worksheet = workbook.Sheets[sheetName]
-    const data = XLSX.utils.sheet_to_json(worksheet)
+    const data = XLSX.utils.sheet_to_json(worksheet) as any[]
     
     console.log(`📊 Total de produtos encontrados: ${data.length}`)
     

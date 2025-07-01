@@ -413,7 +413,7 @@ async function debugConsultant() {
       
       // Check auth user
       const { data: authUser } = await supabase.auth.admin.getUserById(existingConsultant.user_id)
-      if (authUser) {
+      if (authUser && authUser.user) {
         console.log('\n✅ Usuário auth encontrado:')
         console.log(`ID: ${authUser.user.id}`)
         console.log(`Email: ${authUser.user.email}`)
