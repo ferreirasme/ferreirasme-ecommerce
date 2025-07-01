@@ -74,7 +74,7 @@ export default function ImportExcelPage() {
           setProgress(currentProgress)
           setProgressMessage(`Processando ${i + 1} de ${totalItems} consultoras...`)
 
-          const response = await fetch('/api/consultants-simple', {
+          const response = await fetch('/api/consultants-fix', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
