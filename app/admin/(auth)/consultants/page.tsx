@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { createClient } from "@/lib/supabase/client"
 import {
   Table,
   TableBody,
@@ -57,7 +57,7 @@ export default function ConsultantsPage() {
   const [error, setError] = useState<string | null>(null)
   const itemsPerPage = 10
 
-  const supabase = createClientComponentClient()
+  const supabase = createClient()
 
   useEffect(() => {
     // Check authentication first
