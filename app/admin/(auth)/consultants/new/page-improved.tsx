@@ -73,6 +73,13 @@ export default function NewConsultantPage() {
     }
   }
 
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }))
+  }
+
   const handlePostalCodeChange = (value: string) => {
     setFormData(prev => ({
       ...prev,
@@ -96,13 +103,6 @@ export default function NewConsultantPage() {
     }))
     
     toast.success('Endereço preenchido automaticamente!')
-  }
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }))
   }
 
   return (
@@ -177,6 +177,7 @@ export default function NewConsultantPage() {
                   <Input
                     id="nif"
                     name="nif"
+                    placeholder="XXXXXXXXX"
                     value={formData.nif}
                     onChange={handleChange}
                   />
@@ -310,6 +311,7 @@ export default function NewConsultantPage() {
                   <Input
                     id="bank_name"
                     name="bank_name"
+                    placeholder="Ex: Caixa Geral de Depósitos"
                     value={formData.bank_name}
                     onChange={handleChange}
                   />
@@ -319,6 +321,7 @@ export default function NewConsultantPage() {
                   <Input
                     id="bank_iban"
                     name="bank_iban"
+                    placeholder="PT50 XXXX XXXX XXXX XXXX XXXX X"
                     value={formData.bank_iban}
                     onChange={handleChange}
                   />
@@ -329,6 +332,7 @@ export default function NewConsultantPage() {
                 <Input
                   id="bank_account_holder"
                   name="bank_account_holder"
+                  placeholder="Nome como aparece no banco"
                   value={formData.bank_account_holder}
                   onChange={handleChange}
                 />

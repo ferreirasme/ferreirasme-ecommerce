@@ -168,6 +168,7 @@ export async function POST(request: NextRequest) {
         bank_account_holder: body.bank_account_holder,
         commission_percentage: body.commission_percentage || 10,
         monthly_target: body.monthly_target || 0,
+        commission_period_days: body.commission_period_days || 45,
         notes: body.notes,
         status: 'pending',
         consent_date: new Date().toISOString(),
