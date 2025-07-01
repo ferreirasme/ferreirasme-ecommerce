@@ -57,7 +57,13 @@ export async function POST(request: NextRequest) {
         'res.partner', 'search_read',
         [[['is_company', '=', false]]],
         { 
-          fields: ['name', 'email', 'phone', 'mobile', 'vat', 'street', 'street2', 'city', 'zip', 'country_id', 'state_id'],
+          fields: [
+            'name', 'email', 'phone', 'mobile', 'vat', 'street', 'street2', 
+            'city', 'zip', 'country_id', 'state_id', 'ref', 'lang', 'website',
+            'comment', 'function', 'category_id', 'customer_rank', 'supplier_rank',
+            'credit_limit', 'property_payment_term_id', 'active', 'employee',
+            'partner_share', 'bank_ids', 'image_1920', 'title'
+          ],
           limit: 1000 // Adjust as needed
         }
       ], (err: any, result: any) => {
@@ -106,15 +112,30 @@ export async function POST(request: NextRequest) {
           email: partner.email,
           phone: partner.phone || partner.mobile || '',
           whatsapp: partner.mobile || partner.phone || '',
+          mobile: partner.mobile || '',
           nif: partner.vat || '',
           address_street: partner.street || '',
           address_complement: partner.street2 || '',
           address_city: partner.city || '',
           address_postal_code: partner.zip || '',
+          address_state: partner.state_id ? partner.state_id[1] : '',
           address_country: partner.country_id ? partner.country_id[1].substring(0, 2).toUpperCase() : 'PT',
+          function: partner.function || '',
+          website: partner.website || '',
+          lang: partner.lang || 'pt_BR',
+          ref: partner.ref || '',
+          customer_rank: partner.customer_rank || 0,
+          supplier_rank: partner.supplier_rank || 0,
+          credit_limit: partner.credit_limit || 0,
+          property_payment_term_id: partner.property_payment_term_id ? partner.property_payment_term_id[0] : null,
+          category_ids: partner.category_id || [],
+          is_employee: partner.employee || false,
+          partner_share: partner.partner_share !== false,
+          notes: partner.comment || '',
+          odoo_image_1920: partner.image_1920 || null, // Store base64 image
           commission_percentage: 10, // Default
           commission_period_days: 45,
-          status: 'active',
+          status: partner.active ? 'active' : 'inactive',
           consent_date: new Date().toISOString(),
           consent_version: '1.0.0',
           created_by: admin.id

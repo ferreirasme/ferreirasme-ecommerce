@@ -16,7 +16,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Plus, Search, Edit, Eye, MoreVertical } from "lucide-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Plus, Search, Edit, Eye, MoreVertical, User } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,6 +39,9 @@ interface Consultant {
   total_sales: number
   total_commission_earned: number
   created_at: string
+  profile_image_url?: string
+  odoo_image_1920?: string
+  function?: string
   _count?: {
     clients: number
   }
@@ -172,6 +176,7 @@ export default function ConsultantsPage() {
             </TableCaption>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[50px]"></TableHead>
                 <TableHead>Código</TableHead>
                 <TableHead>Nome</TableHead>
                 <TableHead>Email</TableHead>
@@ -186,21 +191,39 @@ export default function ConsultantsPage() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8">
+                  <TableCell colSpan={10} className="text-center py-8">
                     Carregando...
                   </TableCell>
                 </TableRow>
               ) : consultants.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8">
+                  <TableCell colSpan={10} className="text-center py-8">
                     Nenhuma consultora encontrada
                   </TableCell>
                 </TableRow>
               ) : (
                 consultants.map((consultant) => (
                   <TableRow key={consultant.id}>
+                    <TableCell>
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage 
+                          src={consultant.profile_image_url || (consultant.odoo_image_1920 ? `data:image/png;base64,${consultant.odoo_image_1920}` : undefined)}
+                          alt={consultant.full_name}
+                        />
+                        <AvatarFallback>
+                          <User className="h-5 w-5" />
+                        </AvatarFallback>
+                      </Avatar>
+                    </TableCell>
                     <TableCell className="font-medium">{consultant.code}</TableCell>
-                    <TableCell>{consultant.full_name}</TableCell>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{consultant.full_name}</div>
+                        {consultant.function && (
+                          <div className="text-sm text-muted-foreground">{consultant.function}</div>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>{consultant.email}</TableCell>
                     <TableCell>{consultant.phone}</TableCell>
                     <TableCell>{getStatusBadge(consultant.status)}</TableCell>
