@@ -12,19 +12,21 @@ export async function checkIsAdmin(request: NextRequest): Promise<AdminUser | nu
   try {
     const supabase = await createClient()
     
-    // Get current session
-    const { data: { session }, error } = await supabase.auth.getSession()
+    // Get current user
+    const { data: { user }, error } = await supabase.auth.getUser()
     
-    if (error || !session) {
-      console.log('No session found')
+    if (error || !user) {
+      console.log('No user found:', error?.message)
       return null
     }
 
-    // Check if user is in admins table
+    console.log('Checking admin status for user:', user.email)
+
+    // Check if user is in admins table by email
     const { data: admin, error: adminError } = await supabase
       .from('admins')
       .select('*')
-      .eq('id', session.user.id)
+      .eq('email', user.email)
       .eq('active', true)
       .single()
 
@@ -32,6 +34,8 @@ export async function checkIsAdmin(request: NextRequest): Promise<AdminUser | nu
       console.log('User is not an admin:', adminError?.message)
       return null
     }
+
+    console.log('Admin found:', admin.email)
 
     return {
       id: admin.id,

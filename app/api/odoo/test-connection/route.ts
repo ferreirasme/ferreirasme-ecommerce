@@ -1,7 +1,16 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getOdooClient } from '@/lib/odoo/client';
+import { checkIsAdmin } from '@/lib/security/check-admin';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // Check admin authentication
+  const admin = await checkIsAdmin(request);
+  if (!admin) {
+    return NextResponse.json(
+      { error: 'Unauthorized: Admin access required' },
+      { status: 401 }
+    );
+  }
   try {
     // Verificar se as variáveis estão configuradas
     const requiredVars = ['ODOO_URL', 'ODOO_DB', 'ODOO_USERNAME', 'ODOO_API_KEY'];

@@ -1,8 +1,17 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getOdooClient } from '@/lib/odoo/client';
 import { createClient } from '@/lib/supabase/server';
+import { checkIsAdmin } from '@/lib/security/check-admin';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  // Check admin authentication
+  const admin = await checkIsAdmin(request);
+  if (!admin) {
+    return NextResponse.json(
+      { error: 'Unauthorized: Admin access required' },
+      { status: 401 }
+    );
+  }
   try {
     const { limit = 10, offset = 0 } = await request.json();
     
