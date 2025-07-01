@@ -77,27 +77,33 @@ export async function POST(request: NextRequest) {
       finalSlug = `${slug}-${Math.random().toString(36).substring(2, 6)}`
     }
 
-    // Create product - ONLY with valid columns
+    // Create product - ONLY with basic valid columns
+    const productData: any = {
+      name,
+      slug: finalSlug,
+      sku,
+      description,
+      price: price || 0,
+      stock_quantity: stockQuantity,
+      active: true,
+      featured: isFavorite,
+      metadata: {
+        imported_from: 'Excel',
+        import_date: new Date().toISOString(),
+        cost: cost, // Store cost in metadata
+        original_data: body,
+        status: stockQuantity > 0 ? 'active' : 'out_of_stock' // Store status in metadata
+      }
+    }
+
+    // Add sale_price only if it makes sense
+    if (cost > 0 && cost < price) {
+      productData.sale_price = cost
+    }
+
     const { data: product, error: productError } = await supabase
       .from('products')
-      .insert({
-        name,
-        slug: finalSlug,
-        sku,
-        description,
-        price: price || 0,
-        sale_price: cost > 0 && cost < price ? cost : null,
-        stock_quantity: stockQuantity,
-        status: stockQuantity > 0 ? 'active' : 'out_of_stock',
-        active: true,
-        featured: isFavorite,
-        metadata: {
-          imported_from: 'Excel',
-          import_date: new Date().toISOString(),
-          cost: cost, // Store cost in metadata
-          original_data: body
-        }
-      })
+      .insert(productData)
       .select()
       .single()
 
