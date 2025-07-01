@@ -13,7 +13,8 @@ import {
   BarChart3,
   LogOut,
   Shield,
-  Download
+  Download,
+  Upload
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -30,6 +31,7 @@ const navigation = [
   { name: "Comissões", href: "/admin/commissions", icon: DollarSign },
   { name: "Relatórios", href: "/admin/reports", icon: BarChart3 },
   { name: "Importar Odoo", href: "/admin/import-odoo", icon: Download },
+  { name: "Importar Excel", href: "/admin/import-excel", icon: Upload },
   { name: "Configurações", href: "/admin/settings", icon: Settings },
 ]
 
