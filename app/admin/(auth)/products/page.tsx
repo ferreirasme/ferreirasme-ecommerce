@@ -66,7 +66,6 @@ interface Product {
   stock_quantity: number
   featured: boolean
   active: boolean
-  status: string
   main_image_url: string | null
   odoo_image: string | null
   odoo_id: number | null
@@ -144,7 +143,6 @@ export default function ProductsPage() {
           stock_quantity,
           featured,
           active,
-          status,
           main_image_url,
           odoo_image,
           odoo_id,
@@ -157,9 +155,10 @@ export default function ProductsPage() {
         query = query.or(`name.ilike.%${searchTerm}%,sku.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`)
       }
 
-      if (statusFilter !== "all") {
-        query = query.eq('status', statusFilter)
-      }
+      // Status filter disabled - column doesn't exist
+      // if (statusFilter !== "all") {
+      //   query = query.eq('status', statusFilter)
+      // }
 
       // Category filter temporarily disabled due to relationship issues
       // if (categoryFilter !== "all") {

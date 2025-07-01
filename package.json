@@ -18,7 +18,10 @@
     "odoo:import-consultants": "npx tsx scripts/test-odoo-import-local.ts import-consultants",
     "excel:preview": "npx tsx scripts/preview-excel-data.ts",
     "excel:import": "npx tsx scripts/import-excel-data.ts",
-    "excel:import-api": "npx tsx scripts/import-excel-via-api.ts"
+    "excel:import-api": "npx tsx scripts/import-excel-via-api.ts",
+    "import-odoo-photos": "npx tsx scripts/import-odoo-photos.ts",
+    "import-odoo-photos:dry-run": "npx tsx scripts/import-odoo-photos.ts --dry-run",
+    "test:consultant-photo-import": "npx tsx scripts/test-consultant-photo-import.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",
