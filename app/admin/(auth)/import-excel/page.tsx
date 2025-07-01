@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Progress } from "@/components/ui/progress"
 import { toast } from "sonner"
 import { Upload, Download, Users, Package, AlertCircle, CheckCircle, XCircle } from "lucide-react"
 import * as XLSX from 'xlsx'
@@ -15,6 +16,8 @@ export default function ImportExcelPage() {
   const [consultantsFile, setConsultantsFile] = useState<File | null>(null)
   const [productsFile, setProductsFile] = useState<File | null>(null)
   const [results, setResults] = useState<any>(null)
+  const [progress, setProgress] = useState(0)
+  const [progressMessage, setProgressMessage] = useState('')
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'consultants' | 'products') => {
     const file = e.target.files?.[0]
@@ -35,6 +38,8 @@ export default function ImportExcelPage() {
 
     setLoading(true)
     setResults(null)
+    setProgress(0)
+    setProgressMessage('Lendo arquivo Excel...')
 
     try {
       // Read file
@@ -49,8 +54,10 @@ export default function ImportExcelPage() {
       let created = 0
       let errors = 0
       const errorDetails: any[] = []
+      const totalItems = jsonData.length
 
-      for (const row of jsonData) {
+      for (let i = 0; i < jsonData.length; i++) {
+        const row = jsonData[i]
         try {
           const name = row['Nome completo'] || ''
           const email = row['E-mail'] || ''
@@ -62,34 +69,33 @@ export default function ImportExcelPage() {
             continue
           }
 
+          // Update progress
+          const currentProgress = Math.round(((i + 1) / totalItems) * 100)
+          setProgress(currentProgress)
+          setProgressMessage(`Processando ${i + 1} de ${totalItems} consultoras...`)
+
           const response = await fetch('/api/consultants-simple', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              fullName: name,
+              full_name: name,
               email: email.toLowerCase().trim(),
               phone: phone,
               whatsapp: phone,
-              address: {
-                street: '',
-                number: '',
-                complement: '',
-                neighborhood: '',
-                city: city,
-                state: '',
-                postalCode: '',
-                country: country === 'Portugal' ? 'PT' : country
-              },
-              bank: {
-                name: '',
-                iban: '',
-                accountHolder: name
-              },
-              commission: {
-                percentage: 10,
-                monthlyTarget: 1000,
-                periodDays: 45
-              },
+              address_street: '',
+              address_number: '',
+              address_complement: '',
+              address_neighborhood: '',
+              address_city: city,
+              address_state: '',
+              address_postal_code: '',
+              address_country: country === 'Portugal' ? 'PT' : country,
+              bank_name: '',
+              bank_iban: '',
+              bank_account_holder: name,
+              commission_percentage: 10,
+              monthly_target: 1000,
+              commission_period_days: 45,
               notes: `Importado do Excel em ${new Date().toLocaleDateString('pt-BR')}`
             })
           })
@@ -127,6 +133,8 @@ export default function ImportExcelPage() {
       toast.error('Erro ao processar arquivo: ' + error.message)
     } finally {
       setLoading(false)
+      setProgress(0)
+      setProgressMessage('')
     }
   }
 
@@ -228,8 +236,15 @@ export default function ImportExcelPage() {
               className="w-full"
             >
               <Upload className="mr-2 h-4 w-4" />
-              Importar Consultoras
+              {loading ? 'Importando...' : 'Importar Consultoras'}
             </Button>
+
+            {loading && progressMessage && (
+              <div className="space-y-2">
+                <p className="text-sm text-gray-600">{progressMessage}</p>
+                <Progress value={progress} className="w-full" />
+              </div>
+            )}
           </CardContent>
         </Card>
 
