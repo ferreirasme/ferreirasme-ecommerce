@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -102,7 +102,7 @@ export function OdooPhotoImport() {
   }
 
   // Auto-fetch status on mount
-  useState(() => {
+  useEffect(() => {
     fetchStatus()
   }, [])
 
@@ -234,13 +234,13 @@ export function OdooPhotoImport() {
               {/* Status Badges */}
               <div className="flex flex-wrap gap-2">
                 {status.statistics.total === status.statistics.mapped && (
-                  <Badge variant="success" className="gap-1">
+                  <Badge variant="default" className="gap-1 bg-green-100 text-green-800">
                     <CheckCircle className="h-3 w-3" />
                     All products mapped
                   </Badge>
                 )}
                 {status.statistics.mapped === status.statistics.withPhotos && status.statistics.mapped > 0 && (
-                  <Badge variant="success" className="gap-1">
+                  <Badge variant="default" className="gap-1 bg-green-100 text-green-800">
                     <CheckCircle className="h-3 w-3" />
                     All mapped products have photos
                   </Badge>

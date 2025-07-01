@@ -190,13 +190,8 @@ export default function ProductsPage() {
 
   const handleStatusChange = async (productId: string, newStatus: string) => {
     try {
-      const updateData: any = { status: newStatus }
-      
-      // Update active flag based on status
-      if (newStatus === 'inactive' || newStatus === 'discontinued') {
-        updateData.active = false
-      } else if (newStatus === 'active') {
-        updateData.active = true
+      const updateData = {
+        active: newStatus === 'active'
       }
 
       const { error } = await supabase
@@ -427,7 +422,11 @@ export default function ProductsPage() {
                           {getStockBadge(product.stock_quantity)}
                         </div>
                       </TableCell>
-                      <TableCell>{getStatusBadge(product.status)}</TableCell>
+                      <TableCell>
+                        <Badge variant={product.active ? "default" : "secondary"}>
+                          {product.active ? 'Ativo' : 'Inativo'}
+                        </Badge>
+                      </TableCell>
                       <TableCell className="font-mono text-sm">
                         {product.odoo_id || '-'}
                       </TableCell>
@@ -455,26 +454,13 @@ export default function ProductsPage() {
                               </DropdownMenuItem>
                             </Link>
                             <DropdownMenuSeparator />
-                            {product.status === 'active' ? (
+                            {product.active ? (
                               <DropdownMenuItem onClick={() => handleStatusChange(product.id, 'inactive')}>
                                 Desativar
                               </DropdownMenuItem>
-                            ) : product.status === 'inactive' ? (
+                            ) : (
                               <DropdownMenuItem onClick={() => handleStatusChange(product.id, 'active')}>
                                 Ativar
-                              </DropdownMenuItem>
-                            ) : null}
-                            {product.stock_quantity === 0 && product.status !== 'out_of_stock' && (
-                              <DropdownMenuItem onClick={() => handleStatusChange(product.id, 'out_of_stock')}>
-                                Marcar sem estoque
-                              </DropdownMenuItem>
-                            )}
-                            {product.status !== 'discontinued' && (
-                              <DropdownMenuItem 
-                                onClick={() => handleStatusChange(product.id, 'discontinued')}
-                                className="text-red-600"
-                              >
-                                Descontinuar
                               </DropdownMenuItem>
                             )}
                           </DropdownMenuContent>
