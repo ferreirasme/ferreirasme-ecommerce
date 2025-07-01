@@ -154,7 +154,7 @@ async function verifyConsultantSystem() {
 
       console.log('Commissions by status:')
       Object.entries(commissionsByStatus).forEach(([status, data]) => {
-        console.log(`  - ${status}: ${data.count} records, €${data.total.toFixed(2)} total`)
+        console.log(`  - ${status}: ${(data as any).count} records, €${(data as any).total.toFixed(2)} total`)
       })
     }
 

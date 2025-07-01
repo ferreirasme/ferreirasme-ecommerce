@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     // Verificar se usuário existe ou criar
     let { data: users, error: userError } = await supabaseAdmin.auth.admin.listUsers()
     
-    let user = users?.users.find(u => u.email === email)
+    let user = users?.users.find((u: any) => u.email === email)
 
     if (!user) {
       // Criar usuário

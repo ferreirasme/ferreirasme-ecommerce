@@ -59,7 +59,7 @@ async function checkConsultants() {
       const consultantUsers = users.filter(user => 
         user.user_metadata?.role === 'consultant' || 
         user.email?.includes('consultant') ||
-        user.raw_app_meta_data?.role === 'consultant'
+        user.app_metadata?.role === 'consultant'
       )
       
       console.log(`Users that might be consultants: ${consultantUsers.length}`)
@@ -77,7 +77,7 @@ async function checkConsultants() {
         const consultantEmails = consultants.map(c => c.email)
         const orphanedUsers = users.filter(u => 
           u.email && !consultantEmails.includes(u.email) && 
-          (u.user_metadata?.role === 'consultant' || u.raw_app_meta_data?.role === 'consultant')
+          (u.user_metadata?.role === 'consultant' || u.app_metadata?.role === 'consultant')
         )
 
         if (orphanedUsers.length > 0) {
@@ -137,16 +137,16 @@ async function checkConsultants() {
     }
 
     // Check in Auth
-    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserByEmail(testEmail)
+    const authUser = users.find(u => u.email === testEmail)
     
-    if (authError || !authUser.user) {
+    if (!authUser) {
       console.log(`No Auth user found with email: ${testEmail}`)
     } else {
       console.log(`Auth user found:`)
-      console.log(`- ID: ${authUser.user.id}`)
-      console.log(`- Email: ${authUser.user.email}`)
-      console.log(`- Created: ${authUser.user.created_at}`)
-      console.log(`- Metadata: ${JSON.stringify(authUser.user.user_metadata)}`)
+      console.log(`- ID: ${authUser.id}`)
+      console.log(`- Email: ${authUser.email}`)
+      console.log(`- Created: ${authUser.created_at}`)
+      console.log(`- Metadata: ${JSON.stringify(authUser.user_metadata)}`)
     }
 
   } catch (error) {
