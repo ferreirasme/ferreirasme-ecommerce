@@ -89,14 +89,14 @@ export async function POST(request: NextRequest) {
           .eq('email', partner.email)
           .single()
 
-        // Generate consultant code
-        let consultantCode: string
+        // Generate consultant code if needed
+        let consultantCode: string = ''
         if (!existingConsultant) {
           const { data: codeData } = await supabase
             .rpc('generate_consultant_code')
             .single()
           
-          consultantCode = codeData || `CONS${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`
+          consultantCode = (typeof codeData === 'string' ? codeData : null) || `CONS${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`
         }
 
         // Prepare consultant data
@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
             .insert({
               ...consultantData,
               user_id: userId,
-              code: consultantCode!
+              code: consultantCode
             })
 
           if (insertError) throw insertError
