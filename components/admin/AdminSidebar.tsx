@@ -12,7 +12,8 @@ import {
   Settings,
   BarChart3,
   LogOut,
-  Shield
+  Shield,
+  Download
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -28,6 +29,7 @@ const navigation = [
   { name: "Produtos", href: "/admin/products", icon: Package },
   { name: "Comissões", href: "/admin/commissions", icon: DollarSign },
   { name: "Relatórios", href: "/admin/reports", icon: BarChart3 },
+  { name: "Importar Odoo", href: "/admin/import-odoo", icon: Download },
   { name: "Configurações", href: "/admin/settings", icon: Settings },
 ]
 
