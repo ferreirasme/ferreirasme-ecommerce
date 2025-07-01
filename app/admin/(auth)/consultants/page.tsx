@@ -27,6 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { toast } from "sonner"
+import { DebugAuth } from "@/components/admin/DebugAuth"
 
 interface Consultant {
   id: string
@@ -53,23 +54,61 @@ export default function ConsultantsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [error, setError] = useState<string | null>(null)
   const itemsPerPage = 10
 
   const supabase = createClientComponentClient()
 
   useEffect(() => {
-    fetchConsultants()
+    // Check authentication first
+    const checkAuth = async () => {
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      if (authError || !user) {
+        console.error('Auth error:', authError)
+        setError('Não autenticado')
+        return
+      }
+      console.log('Authenticated user:', user.email)
+      fetchConsultants()
+    }
+    checkAuth()
   }, [currentPage, searchTerm])
 
   const fetchConsultants = async () => {
     try {
       setLoading(true)
       
+      // First, let's check if we can access the consultants table at all
+      const { data: testData, error: testError } = await supabase
+        .from('consultants')
+        .select('id')
+        .limit(1)
+      
+      if (testError) {
+        console.error('Test query error:', testError)
+        toast.error(`Erro de permissão: ${testError.message}`)
+        setLoading(false)
+        return
+      }
+      
+      // Build the main query
       let query = supabase
         .from('consultants')
         .select(`
-          *,
-          clients (count)
+          id,
+          code,
+          full_name,
+          email,
+          phone,
+          status,
+          commission_percentage,
+          total_sales,
+          total_commission_earned,
+          created_at,
+          profile_image_url,
+          odoo_image_1920,
+          function,
+          clients!left(count)
         `, { count: 'exact' })
 
       if (searchTerm) {
@@ -80,7 +119,12 @@ export default function ConsultantsPage() {
         .order('created_at', { ascending: false })
         .range((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage - 1)
 
-      if (error) throw error
+      if (error) {
+        console.error('Main query error:', error)
+        throw error
+      }
+
+      console.log('Consultants data:', data)
 
       // Transform the data to include client count
       const transformedData = data?.map(consultant => ({
@@ -92,9 +136,11 @@ export default function ConsultantsPage() {
 
       setConsultants(transformedData)
       setTotalPages(Math.ceil((count || 0) / itemsPerPage))
-    } catch (error) {
+      setError(null)
+    } catch (error: any) {
       console.error('Error fetching consultants:', error)
-      toast.error('Erro ao carregar consultoras')
+      setError(error.message || 'Erro desconhecido')
+      toast.error(`Erro ao carregar consultoras: ${error.message || 'Erro desconhecido'}`)
     } finally {
       setLoading(false)
     }
@@ -136,6 +182,9 @@ export default function ConsultantsPage() {
 
   return (
     <div>
+      {/* Temporary debug component */}
+      <DebugAuth />
+      
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Consultoras</h1>
         <Link href="/admin/consultants/new">
@@ -189,7 +238,13 @@ export default function ConsultantsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loading ? (
+              {error ? (
+                <TableRow>
+                  <TableCell colSpan={10} className="text-center py-8 text-red-600">
+                    Erro: {error}
+                  </TableCell>
+                </TableRow>
+              ) : loading ? (
                 <TableRow>
                   <TableCell colSpan={10} className="text-center py-8">
                     Carregando...
@@ -207,8 +262,18 @@ export default function ConsultantsPage() {
                     <TableCell>
                       <Avatar className="h-10 w-10">
                         <AvatarImage 
-                          src={consultant.profile_image_url || (consultant.odoo_image_1920 ? `data:image/png;base64,${consultant.odoo_image_1920}` : undefined)}
+                          src={
+                            consultant.profile_image_url 
+                              ? consultant.profile_image_url 
+                              : consultant.odoo_image_1920 
+                                ? `data:image/jpeg;base64,${consultant.odoo_image_1920}` 
+                                : undefined
+                          }
                           alt={consultant.full_name}
+                          onError={(e) => {
+                            console.error('Avatar image error for consultant:', consultant.full_name)
+                            e.currentTarget.style.display = 'none'
+                          }}
                         />
                         <AvatarFallback>
                           <User className="h-5 w-5" />

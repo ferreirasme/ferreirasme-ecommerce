@@ -28,10 +28,11 @@ export async function getAdmin() {
     return null
   }
 
+  // Admins are identified by email in the RLS policies
   const { data: admin } = await supabase
     .from('admins')
     .select('*')
-    .eq('id', user.id)
+    .eq('email', user.email)
     .eq('active', true)
     .single()
 
