@@ -44,7 +44,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { toast } from "sonner"
-import { DebugAuth } from "@/components/admin/DebugAuth"
 import Image from "next/image"
 
 interface Category {
@@ -131,7 +130,7 @@ export default function ProductsPage() {
     try {
       setLoading(true)
       
-      // Build the main query
+      // Build the main query - simplified to avoid relationship errors
       let query = supabase
         .from('products')
         .select(`
@@ -150,19 +149,7 @@ export default function ProductsPage() {
           odoo_image,
           odoo_id,
           created_at,
-          updated_at,
-          product_categories!left(
-            category:categories(
-              id,
-              name
-            )
-          ),
-          product_images!left(
-            id,
-            image_url,
-            alt_text,
-            is_primary
-          )
+          updated_at
         `, { count: 'exact' })
 
       // Apply filters
@@ -174,9 +161,10 @@ export default function ProductsPage() {
         query = query.eq('status', statusFilter)
       }
 
-      if (categoryFilter !== "all") {
-        query = query.contains('product_categories', [{ category_id: categoryFilter }])
-      }
+      // Category filter temporarily disabled due to relationship issues
+      // if (categoryFilter !== "all") {
+      //   query = query.contains('product_categories', [{ category_id: categoryFilter }])
+      // }
 
       const { data, error, count } = await query
         .order('created_at', { ascending: false })
@@ -188,16 +176,8 @@ export default function ProductsPage() {
       }
 
       console.log('Products data:', data)
-
-      // Map the data to match our Product interface
-      const mappedProducts: Product[] = (data || []).map((item: any) => ({
-        ...item,
-        product_categories: item.product_categories?.map((pc: any) => ({
-          category: pc.category ? pc.category[0] || null : null
-        })) || []
-      }))
       
-      setProducts(mappedProducts)
+      setProducts(data || [])
       setTotalPages(Math.ceil((count || 0) / itemsPerPage))
       setError(null)
     } catch (error: any) {
@@ -265,18 +245,9 @@ export default function ProductsPage() {
   }
 
   const getProductImage = (product: Product) => {
-    // Priority: main_image_url > primary product_image > first product_image > odoo_image
+    // Priority: main_image_url > odoo_image
     if (product.main_image_url) {
       return product.main_image_url
-    }
-    
-    const primaryImage = product.product_images?.find(img => img.is_primary)
-    if (primaryImage) {
-      return primaryImage.image_url
-    }
-    
-    if (product.product_images && product.product_images.length > 0) {
-      return product.product_images[0].image_url
     }
     
     if (product.odoo_image) {
@@ -288,16 +259,15 @@ export default function ProductsPage() {
 
   return (
     <div>
-      {/* Temporary debug component */}
-      <DebugAuth />
-      
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Produtos</h1>
         <div className="flex gap-2">
-          <Button variant="outline">
-            <Upload className="h-4 w-4 mr-2" />
-            Importar de Odoo
-          </Button>
+          <Link href="/admin/import-odoo">
+            <Button variant="outline">
+              <Upload className="h-4 w-4 mr-2" />
+              Importar de Odoo
+            </Button>
+          </Link>
           <Link href="/admin/products/new">
             <Button>
               <Plus className="h-4 w-4 mr-2" />
@@ -434,18 +404,7 @@ export default function ProductsPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {product.product_categories?.map((pc, index) => 
-                            pc.category ? (
-                              <Badge key={pc.category.id} variant="outline" className="text-xs">
-                                {pc.category.name}
-                              </Badge>
-                            ) : null
-                          )}
-                          {(!product.product_categories || product.product_categories.filter(pc => pc.category).length === 0) && (
-                            <span className="text-sm text-muted-foreground">-</span>
-                          )}
-                        </div>
+                        <span className="text-sm text-muted-foreground">-</span>
                       </TableCell>
                       <TableCell>
                         <div>

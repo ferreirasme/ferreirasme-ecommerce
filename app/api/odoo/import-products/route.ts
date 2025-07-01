@@ -62,12 +62,17 @@ async function uploadBase64Image(
 }
 
 export async function POST(request: NextRequest) {
+  console.log('[ODOO IMPORT] Starting product import process')
+  
   try {
     // Check if user is admin
     const admin = await checkIsAdmin(request)
     if (!admin) {
+      console.log('[ODOO IMPORT] Access denied - user is not admin')
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
+    
+    console.log('[ODOO IMPORT] Admin authenticated:', admin.email)
 
     const supabase = await createClient()
     const adminSupabase = createAdminClient()
@@ -77,6 +82,13 @@ export async function POST(request: NextRequest) {
     const db = process.env.ODOO_DB!
     const username = process.env.ODOO_USERNAME!
     const apiKey = process.env.ODOO_API_KEY!
+    
+    console.log('[ODOO IMPORT] Odoo config:', {
+      url: url || 'NOT SET',
+      db: db || 'NOT SET',
+      username: username || 'NOT SET',
+      hasApiKey: !!apiKey
+    })
 
     // Create XML-RPC clients
     const common = xmlrpc.createClient({ 
@@ -96,14 +108,21 @@ export async function POST(request: NextRequest) {
     })
 
     // Authenticate
+    console.log('[ODOO IMPORT] Authenticating with Odoo...')
     const uid = await new Promise<number>((resolve, reject) => {
       common.methodCall('authenticate', [db, username, apiKey, {}], (err: any, uid: number) => {
-        if (err) reject(err)
-        else resolve(uid)
+        if (err) {
+          console.error('[ODOO IMPORT] Authentication error:', err)
+          reject(err)
+        } else {
+          console.log('[ODOO IMPORT] Authentication successful, UID:', uid)
+          resolve(uid)
+        }
       })
     })
 
     if (!uid) {
+      console.log('[ODOO IMPORT] Authentication failed - no UID returned')
       return NextResponse.json({ error: 'Falha na autenticação com Odoo' }, { status: 401 })
     }
 

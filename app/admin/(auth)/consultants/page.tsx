@@ -27,7 +27,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { toast } from "sonner"
-import { DebugAuth } from "@/components/admin/DebugAuth"
 
 interface Consultant {
   id: string
@@ -182,9 +181,6 @@ export default function ConsultantsPage() {
 
   return (
     <div>
-      {/* Temporary debug component */}
-      <DebugAuth />
-      
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Consultoras</h1>
         <Link href="/admin/consultants/new">
