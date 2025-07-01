@@ -7,7 +7,15 @@
     "dev:mobile": "node server.js",
     "build": "next build",
     "start": "next start -p 3001",
-    "lint": "next lint"
+    "lint": "next lint",
+    "odoo:test": "npx tsx scripts/test-odoo-import-local.ts",
+    "odoo:quick": "npx tsx scripts/odoo-quick-test.ts",
+    "odoo:report": "npx tsx scripts/odoo-import-report.ts",
+    "odoo:connection": "npx tsx scripts/test-odoo-connection.ts",
+    "odoo:list-products": "npx tsx scripts/test-odoo-import-local.ts list-products",
+    "odoo:list-consultants": "npx tsx scripts/test-odoo-import-local.ts list-consultants",
+    "odoo:import-products": "npx tsx scripts/test-odoo-import-local.ts import-products",
+    "odoo:import-consultants": "npx tsx scripts/test-odoo-import-local.ts import-consultants"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",

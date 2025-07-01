@@ -5,12 +5,25 @@ import { checkIsAdmin } from "@/lib/security/check-admin"
 const xmlrpc = require('xmlrpc')
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now()
+  console.log('[ODOO CONSULTANTS IMPORT] ========== Starting import process ==========', {
+    timestamp: new Date().toISOString(),
+    requestHeaders: Object.fromEntries(request.headers.entries())
+  })
+  
   try {
     // Check if user is admin
+    console.log('[ODOO CONSULTANTS IMPORT] Checking admin authentication...')
     const admin = await checkIsAdmin(request)
     if (!admin) {
+      console.log('[ODOO CONSULTANTS IMPORT] Access denied - user is not admin')
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
+    console.log('[ODOO CONSULTANTS IMPORT] Admin authenticated:', {
+      adminId: admin.id,
+      adminEmail: admin.email,
+      timestamp: new Date().toISOString()
+    })
 
     const supabase = await createClient()
     const adminSupabase = createAdminClient()
@@ -20,6 +33,14 @@ export async function POST(request: NextRequest) {
     const db = process.env.ODOO_DB!
     const username = process.env.ODOO_USERNAME!
     const apiKey = process.env.ODOO_API_KEY!
+    
+    console.log('[ODOO CONSULTANTS IMPORT] Odoo configuration:', {
+      url: url ? `${url.substring(0, 20)}...` : 'NOT SET',
+      database: db || 'NOT SET',
+      username: username || 'NOT SET',
+      hasApiKey: !!apiKey,
+      timestamp: new Date().toISOString()
+    })
 
     // Create XML-RPC clients
     const common = xmlrpc.createClient({ 
@@ -39,10 +60,24 @@ export async function POST(request: NextRequest) {
     })
 
     // Authenticate
+    console.log('[ODOO CONSULTANTS IMPORT] Authenticating with Odoo XML-RPC...')
+    const authStartTime = Date.now()
     const uid = await new Promise<number>((resolve, reject) => {
       common.methodCall('authenticate', [db, username, apiKey, {}], (err: any, uid: number) => {
-        if (err) reject(err)
-        else resolve(uid)
+        if (err) {
+          console.error('[ODOO CONSULTANTS IMPORT] Authentication failed:', {
+            error: err.message || err,
+            duration: `${Date.now() - authStartTime}ms`
+          })
+          reject(err)
+        } else {
+          console.log('[ODOO CONSULTANTS IMPORT] Authentication successful:', {
+            uid,
+            duration: `${Date.now() - authStartTime}ms`,
+            timestamp: new Date().toISOString()
+          })
+          resolve(uid)
+        }
       })
     })
 
@@ -51,6 +86,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch all partners (individuals, not companies)
+    console.log('[ODOO CONSULTANTS IMPORT] Fetching partners from Odoo...')
+    const fetchStartTime = Date.now()
     const partners = await new Promise<any[]>((resolve, reject) => {
       models.methodCall('execute_kw', [
         db, uid, apiKey,
@@ -67,24 +104,64 @@ export async function POST(request: NextRequest) {
           limit: 1000 // Adjust as needed
         }
       ], (err: any, result: any) => {
-        if (err) reject(err)
-        else resolve(result)
+        if (err) {
+          console.error('[ODOO CONSULTANTS IMPORT] Failed to fetch partners:', {
+            error: err.message || err,
+            duration: `${Date.now() - fetchStartTime}ms`
+          })
+          reject(err)
+        } else {
+          console.log('[ODOO CONSULTANTS IMPORT] Partners fetched successfully:', {
+            count: result.length,
+            duration: `${Date.now() - fetchStartTime}ms`,
+            timestamp: new Date().toISOString()
+          })
+          resolve(result)
+        }
       })
     })
 
-    console.log(`Found ${partners.length} partners in Odoo`)
+    console.log(`[ODOO CONSULTANTS IMPORT] Found ${partners.length} partners in Odoo`)
 
     let created = 0
     let updated = 0
     let errors = 0
+    let skipped = 0
     const errorDetails: any[] = []
+    const processStartTime = Date.now()
+    
+    console.log('[ODOO CONSULTANTS IMPORT] Starting to process partners...', {
+      totalPartners: partners.length,
+      timestamp: new Date().toISOString()
+    })
 
     // Process each partner
-    for (const partner of partners) {
+    for (let index = 0; index < partners.length; index++) {
+      const partner = partners[index]
+      
+      // Log progress every 10 partners
+      if (index > 0 && index % 10 === 0) {
+        console.log('[ODOO CONSULTANTS IMPORT] Progress update:', {
+          processed: index,
+          total: partners.length,
+          percentage: `${Math.round((index / partners.length) * 100)}%`,
+          created,
+          updated,
+          errors,
+          skipped,
+          duration: `${Date.now() - processStartTime}ms`,
+          averageTimePerRecord: `${Math.round((Date.now() - processStartTime) / index)}ms`
+        })
+      }
       try {
         // Skip if no email
         if (!partner.email) {
-          console.log(`Skipping ${partner.name} - no email`)
+          console.log('[ODOO CONSULTANTS IMPORT] Skipping partner - no email:', {
+            partnerName: partner.name,
+            partnerId: partner.id,
+            reason: 'missing_email'
+          })
+          skipped++
           continue
         }
 
@@ -150,7 +227,13 @@ export async function POST(request: NextRequest) {
 
           if (updateError) throw updateError
           updated++
-          console.log(`Updated consultant: ${partner.name}`)
+          console.log('[ODOO CONSULTANTS IMPORT] Updated consultant:', {
+            name: partner.name,
+            email: partner.email,
+            consultantId: existingConsultant.id,
+            odooId: partner.id,
+            timestamp: new Date().toISOString()
+          })
         } else {
           // Create auth user first
           let userId: string
@@ -161,7 +244,12 @@ export async function POST(request: NextRequest) {
 
           if (existingUser) {
             userId = existingUser.id
-            console.log(`Using existing auth user for: ${partner.name}`)
+            console.log('[ODOO CONSULTANTS IMPORT] Using existing auth user:', {
+              name: partner.name,
+              email: partner.email,
+              userId,
+              timestamp: new Date().toISOString()
+            })
           } else {
             // Create new auth user
             const { data: { user }, error: authError } = await adminSupabase.auth.admin.createUser({
@@ -180,7 +268,12 @@ export async function POST(request: NextRequest) {
             }
 
             userId = user.id
-            console.log(`Created new auth user for: ${partner.name}`)
+            console.log('[ODOO CONSULTANTS IMPORT] Created new auth user:', {
+              name: partner.name,
+              email: partner.email,
+              userId,
+              timestamp: new Date().toISOString()
+            })
           }
 
           // Create consultant record
@@ -194,20 +287,43 @@ export async function POST(request: NextRequest) {
 
           if (insertError) throw insertError
           created++
-          console.log(`Created consultant: ${partner.name} (${consultantCode})`)
+          console.log('[ODOO CONSULTANTS IMPORT] Created consultant:', {
+            name: partner.name,
+            email: partner.email,
+            consultantCode,
+            odooId: partner.id,
+            userId,
+            timestamp: new Date().toISOString()
+          })
         }
       } catch (error: any) {
         errors++
-        errorDetails.push({
+        const errorDetail = {
           partner: partner.name,
           email: partner.email,
-          error: error.message
-        })
-        console.error(`Error processing ${partner.name}:`, error.message)
+          odooId: partner.id,
+          error: error.message,
+          timestamp: new Date().toISOString()
+        }
+        errorDetails.push(errorDetail)
+        console.error('[ODOO CONSULTANTS IMPORT] Error processing partner:', errorDetail)
       }
     }
+    
+    const processingDuration = Date.now() - processStartTime
+    console.log('[ODOO CONSULTANTS IMPORT] Processing completed:', {
+      totalProcessed: created + updated + errors + skipped,
+      created,
+      updated,
+      errors,
+      skipped,
+      duration: `${processingDuration}ms`,
+      averageTimePerRecord: `${Math.round(processingDuration / partners.length)}ms`,
+      timestamp: new Date().toISOString()
+    })
 
     // Log the import action
+    console.log('[ODOO CONSULTANTS IMPORT] Saving admin log...')
     await supabase
       .from('admin_logs')
       .insert({
@@ -223,7 +339,8 @@ export async function POST(request: NextRequest) {
         }
       })
 
-    return NextResponse.json({
+    const totalDuration = Date.now() - startTime
+    const response = {
       success: true,
       created,
       updated,
@@ -231,13 +348,29 @@ export async function POST(request: NextRequest) {
       total: partners.length,
       details: {
         processed: created + updated + errors,
-        skipped: partners.length - (created + updated + errors),
-        errorSample: errorDetails.slice(0, 5)
+        skipped,
+        errorSample: errorDetails.slice(0, 5),
+        duration: `${totalDuration}ms`,
+        averageTimePerRecord: `${Math.round(totalDuration / partners.length)}ms`
       }
+    }
+    
+    console.log('[ODOO CONSULTANTS IMPORT] ========== Import completed successfully ==========', {
+      ...response,
+      timestamp: new Date().toISOString()
     })
+    
+    return NextResponse.json(response)
 
   } catch (error: any) {
-    console.error('Error importing consultants from Odoo:', error)
+    const totalDuration = Date.now() - startTime
+    console.error('[ODOO CONSULTANTS IMPORT] ========== Import failed ==========', {
+      error: error.message || error,
+      stack: error.stack,
+      duration: `${totalDuration}ms`,
+      timestamp: new Date().toISOString()
+    })
+    
     return NextResponse.json(
       { error: error.message || 'Erro ao importar consultoras' },
       { status: 500 }

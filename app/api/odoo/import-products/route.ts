@@ -62,17 +62,26 @@ async function uploadBase64Image(
 }
 
 export async function POST(request: NextRequest) {
-  console.log('[ODOO IMPORT] Starting product import process')
+  const startTime = Date.now()
+  console.log('[ODOO PRODUCTS IMPORT] ========== Starting product import process ==========', {
+    timestamp: new Date().toISOString(),
+    requestHeaders: Object.fromEntries(request.headers.entries())
+  })
   
   try {
     // Check if user is admin
+    console.log('[ODOO PRODUCTS IMPORT] Checking admin authentication...')
     const admin = await checkIsAdmin(request)
     if (!admin) {
-      console.log('[ODOO IMPORT] Access denied - user is not admin')
+      console.log('[ODOO PRODUCTS IMPORT] Access denied - user is not admin')
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
     
-    console.log('[ODOO IMPORT] Admin authenticated:', admin.email)
+    console.log('[ODOO PRODUCTS IMPORT] Admin authenticated:', {
+      adminId: admin.id,
+      adminEmail: admin.email,
+      timestamp: new Date().toISOString()
+    })
 
     const supabase = await createClient()
     const adminSupabase = createAdminClient()
@@ -83,11 +92,12 @@ export async function POST(request: NextRequest) {
     const username = process.env.ODOO_USERNAME!
     const apiKey = process.env.ODOO_API_KEY!
     
-    console.log('[ODOO IMPORT] Odoo config:', {
-      url: url || 'NOT SET',
-      db: db || 'NOT SET',
+    console.log('[ODOO PRODUCTS IMPORT] Odoo configuration:', {
+      url: url ? `${url.substring(0, 20)}...` : 'NOT SET',
+      database: db || 'NOT SET',
       username: username || 'NOT SET',
-      hasApiKey: !!apiKey
+      hasApiKey: !!apiKey,
+      timestamp: new Date().toISOString()
     })
 
     // Create XML-RPC clients
@@ -108,25 +118,35 @@ export async function POST(request: NextRequest) {
     })
 
     // Authenticate
-    console.log('[ODOO IMPORT] Authenticating with Odoo...')
+    console.log('[ODOO PRODUCTS IMPORT] Authenticating with Odoo XML-RPC...')
+    const authStartTime = Date.now()
     const uid = await new Promise<number>((resolve, reject) => {
       common.methodCall('authenticate', [db, username, apiKey, {}], (err: any, uid: number) => {
         if (err) {
-          console.error('[ODOO IMPORT] Authentication error:', err)
+          console.error('[ODOO PRODUCTS IMPORT] Authentication failed:', {
+            error: err.message || err,
+            duration: `${Date.now() - authStartTime}ms`
+          })
           reject(err)
         } else {
-          console.log('[ODOO IMPORT] Authentication successful, UID:', uid)
+          console.log('[ODOO PRODUCTS IMPORT] Authentication successful:', {
+            uid,
+            duration: `${Date.now() - authStartTime}ms`,
+            timestamp: new Date().toISOString()
+          })
           resolve(uid)
         }
       })
     })
 
     if (!uid) {
-      console.log('[ODOO IMPORT] Authentication failed - no UID returned')
+      console.log('[ODOO PRODUCTS IMPORT] Authentication failed - no UID returned')
       return NextResponse.json({ error: 'Falha na autenticação com Odoo' }, { status: 401 })
     }
 
     // First, fetch all categories from Odoo
+    console.log('[ODOO PRODUCTS IMPORT] Fetching categories from Odoo...')
+    const categoriesFetchStartTime = Date.now()
     const odooCategories = await new Promise<any[]>((resolve, reject) => {
       models.methodCall('execute_kw', [
         db, uid, apiKey,
@@ -137,13 +157,29 @@ export async function POST(request: NextRequest) {
           order: 'parent_left'
         }
       ], (err: any, result: any) => {
-        if (err) reject(err)
-        else resolve(result)
+        if (err) {
+          console.error('[ODOO PRODUCTS IMPORT] Failed to fetch categories:', {
+            error: err.message || err,
+            duration: `${Date.now() - categoriesFetchStartTime}ms`
+          })
+          reject(err)
+        } else {
+          console.log('[ODOO PRODUCTS IMPORT] Categories fetched successfully:', {
+            count: result.length,
+            duration: `${Date.now() - categoriesFetchStartTime}ms`,
+            timestamp: new Date().toISOString()
+          })
+          resolve(result)
+        }
       })
     })
 
     // Create category mappings
+    console.log('[ODOO PRODUCTS IMPORT] Creating category mappings...')
+    const categoryMappingStartTime = Date.now()
     const categoryMap = new Map<number, string>()
+    let categoriesCreated = 0
+    let categoriesExisting = 0
     
     for (const odooCategory of odooCategories) {
       // Check if category mapping already exists
@@ -170,6 +206,7 @@ export async function POST(request: NextRequest) {
         
         if (existingCategory) {
           categoryId = existingCategory.id
+          categoriesExisting++
         } else {
           // Create new category
           const { data: newCategory, error: categoryError } = await supabase
@@ -183,11 +220,16 @@ export async function POST(request: NextRequest) {
             .single()
           
           if (categoryError || !newCategory) {
-            console.error(`Failed to create category ${odooCategory.name}:`, categoryError)
+            console.error('[ODOO PRODUCTS IMPORT] Failed to create category:', {
+              categoryName: odooCategory.name,
+              odooId: odooCategory.id,
+              error: categoryError?.message
+            })
             continue
           }
           
           categoryId = newCategory.id
+          categoriesCreated++
         }
         
         // Create mapping
@@ -202,8 +244,19 @@ export async function POST(request: NextRequest) {
         categoryMap.set(odooCategory.id, categoryId)
       }
     }
+    
+    console.log('[ODOO PRODUCTS IMPORT] Category mapping completed:', {
+      totalCategories: odooCategories.length,
+      mapped: categoryMap.size,
+      created: categoriesCreated,
+      existing: categoriesExisting,
+      duration: `${Date.now() - categoryMappingStartTime}ms`,
+      timestamp: new Date().toISOString()
+    })
 
     // Fetch all products from Odoo
+    console.log('[ODOO PRODUCTS IMPORT] Fetching products from Odoo...')
+    const productsFetchStartTime = Date.now()
     const products = await new Promise<any[]>((resolve, reject) => {
       models.methodCall('execute_kw', [
         db, uid, apiKey,
@@ -219,24 +272,69 @@ export async function POST(request: NextRequest) {
           limit: 5000 // Adjust as needed
         }
       ], (err: any, result: any) => {
-        if (err) reject(err)
-        else resolve(result)
+        if (err) {
+          console.error('[ODOO PRODUCTS IMPORT] Failed to fetch products:', {
+            error: err.message || err,
+            duration: `${Date.now() - productsFetchStartTime}ms`
+          })
+          reject(err)
+        } else {
+          console.log('[ODOO PRODUCTS IMPORT] Products fetched successfully:', {
+            count: result.length,
+            duration: `${Date.now() - productsFetchStartTime}ms`,
+            timestamp: new Date().toISOString()
+          })
+          resolve(result)
+        }
       })
     })
 
-    console.log(`Found ${products.length} products in Odoo`)
+    console.log(`[ODOO PRODUCTS IMPORT] Found ${products.length} products in Odoo`)
 
     let created = 0
     let updated = 0
     let errors = 0
+    let skipped = 0
+    let imagesProcessed = 0
+    let imagesFailed = 0
     const errorDetails: any[] = []
+    const processStartTime = Date.now()
+    
+    console.log('[ODOO PRODUCTS IMPORT] Starting to process products...', {
+      totalProducts: products.length,
+      timestamp: new Date().toISOString()
+    })
 
     // Process each product
-    for (const product of products) {
+    for (let index = 0; index < products.length; index++) {
+      const product = products[index]
+      const productStartTime = Date.now()
+      
+      // Log progress every 25 products
+      if (index > 0 && index % 25 === 0) {
+        console.log('[ODOO PRODUCTS IMPORT] Progress update:', {
+          processed: index,
+          total: products.length,
+          percentage: `${Math.round((index / products.length) * 100)}%`,
+          created,
+          updated,
+          errors,
+          skipped,
+          imagesProcessed,
+          imagesFailed,
+          duration: `${Date.now() - processStartTime}ms`,
+          averageTimePerProduct: `${Math.round((Date.now() - processStartTime) / index)}ms`
+        })
+      }
       try {
         // Skip service products (only process stockable products)
         if (product.type === 'service') {
-          console.log(`Skipping service product: ${product.name}`)
+          console.log('[ODOO PRODUCTS IMPORT] Skipping service product:', {
+            productName: product.name,
+            productId: product.id,
+            type: product.type
+          })
+          skipped++
           continue
         }
 
@@ -287,6 +385,18 @@ export async function POST(request: NextRequest) {
           if (imageUrl) {
             productData.main_image_url = imageUrl
             productData.odoo_image = product.image_1920 // Store base64 as backup
+            imagesProcessed++
+            console.log('[ODOO PRODUCTS IMPORT] Image uploaded successfully:', {
+              productName: product.name,
+              productId: product.id,
+              imageUrl: imageUrl.substring(0, 50) + '...'
+            })
+          } else if (product.image_1920) {
+            imagesFailed++
+            console.warn('[ODOO PRODUCTS IMPORT] Image upload failed:', {
+              productName: product.name,
+              productId: product.id
+            })
           }
         }
 
@@ -333,7 +443,15 @@ export async function POST(request: NextRequest) {
           }
 
           updated++
-          console.log(`Updated product: ${product.name}`)
+          console.log('[ODOO PRODUCTS IMPORT] Updated product:', {
+            name: product.name,
+            sku: sku,
+            productId: existingProduct.id,
+            odooId: product.id,
+            hasImage: !!imageUrl,
+            duration: `${Date.now() - productStartTime}ms`,
+            timestamp: new Date().toISOString()
+          })
         } else {
           // Create new product
           const { data: newProduct, error: insertError } = await supabase
@@ -358,7 +476,16 @@ export async function POST(request: NextRequest) {
           }
 
           created++
-          console.log(`Created product: ${product.name} (${sku})`)
+          console.log('[ODOO PRODUCTS IMPORT] Created product:', {
+            name: product.name,
+            sku: sku,
+            productId: newProduct?.id,
+            odooId: product.id,
+            hasImage: !!imageUrl,
+            categoryId: productData.category_id,
+            duration: `${Date.now() - productStartTime}ms`,
+            timestamp: new Date().toISOString()
+          })
         }
 
         // Create product_categories relationship if category exists
@@ -400,16 +527,35 @@ export async function POST(request: NextRequest) {
 
       } catch (error: any) {
         errors++
-        errorDetails.push({
+        const errorDetail = {
           product: product.name,
           odoo_id: product.id,
-          error: error.message
-        })
-        console.error(`Error processing ${product.name}:`, error.message)
+          sku: product.default_code,
+          error: error.message,
+          duration: `${Date.now() - productStartTime}ms`,
+          timestamp: new Date().toISOString()
+        }
+        errorDetails.push(errorDetail)
+        console.error('[ODOO PRODUCTS IMPORT] Error processing product:', errorDetail)
       }
     }
+    
+    const processingDuration = Date.now() - processStartTime
+    console.log('[ODOO PRODUCTS IMPORT] Processing completed:', {
+      totalProcessed: created + updated + errors + skipped,
+      created,
+      updated,
+      errors,
+      skipped,
+      imagesProcessed,
+      imagesFailed,
+      duration: `${processingDuration}ms`,
+      averageTimePerProduct: `${Math.round(processingDuration / products.length)}ms`,
+      timestamp: new Date().toISOString()
+    })
 
     // Log the import action
+    console.log('[ODOO PRODUCTS IMPORT] Saving admin log...')
     await supabase
       .from('admin_logs')
       .insert({
@@ -421,12 +567,18 @@ export async function POST(request: NextRequest) {
           created,
           updated,
           errors,
+          skipped,
+          images_processed: imagesProcessed,
+          images_failed: imagesFailed,
           error_details: errorDetails.slice(0, 10), // First 10 errors
-          categories_mapped: categoryMap.size
+          categories_mapped: categoryMap.size,
+          categories_created: categoriesCreated,
+          duration: `${Date.now() - startTime}ms`
         }
       })
 
     // Create sync log
+    console.log('[ODOO PRODUCTS IMPORT] Creating sync log...')
     await supabase
       .from('sync_logs')
       .insert({
@@ -445,7 +597,8 @@ export async function POST(request: NextRequest) {
         completed_at: new Date().toISOString()
       })
 
-    return NextResponse.json({
+    const totalDuration = Date.now() - startTime
+    const response = {
       success: true,
       created,
       updated,
@@ -453,14 +606,32 @@ export async function POST(request: NextRequest) {
       total: products.length,
       details: {
         processed: created + updated + errors,
-        skipped: products.length - (created + updated + errors),
+        skipped,
         categoriesMapped: categoryMap.size,
-        errorSample: errorDetails.slice(0, 5)
+        categoriesCreated,
+        imagesProcessed,
+        imagesFailed,
+        errorSample: errorDetails.slice(0, 5),
+        duration: `${totalDuration}ms`,
+        averageTimePerProduct: `${Math.round(totalDuration / products.length)}ms`
       }
+    }
+    
+    console.log('[ODOO PRODUCTS IMPORT] ========== Import completed successfully ==========', {
+      ...response,
+      timestamp: new Date().toISOString()
     })
+    
+    return NextResponse.json(response)
 
   } catch (error: any) {
-    console.error('Error importing products from Odoo:', error)
+    const totalDuration = Date.now() - startTime
+    console.error('[ODOO PRODUCTS IMPORT] ========== Import failed ==========', {
+      error: error.message || error,
+      stack: error.stack,
+      duration: `${totalDuration}ms`,
+      timestamp: new Date().toISOString()
+    })
     
     // Log failed sync
     const supabase = await createClient()

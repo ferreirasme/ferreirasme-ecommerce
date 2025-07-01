@@ -4,9 +4,8 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Progress } from "@/components/ui/progress"
 import { toast } from "sonner"
-import { Upload, Users, Package, CheckCircle, XCircle, Loader2, AlertCircle } from "lucide-react"
+import { Upload, Users, Package, Loader2, AlertCircle } from "lucide-react"
 
 interface ImportResult {
   success: boolean
@@ -14,7 +13,7 @@ interface ImportResult {
   updated?: number
   errors?: number
   total?: number
-  details?: any
+  details?: unknown
   error?: string
 }
 
@@ -44,10 +43,11 @@ export default function ImportOdooPage() {
       
       setProductResult(data)
       toast.success(`Produtos importados: ${data.created} criados, ${data.updated} atualizados`)
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error importing products:', error)
-      setProductResult({ success: false, error: error.message })
-      toast.error('Erro ao importar produtos: ' + error.message)
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
+      setProductResult({ success: false, error: errorMessage })
+      toast.error('Erro ao importar produtos: ' + errorMessage)
     } finally {
       setImportingProducts(false)
     }
@@ -73,10 +73,11 @@ export default function ImportOdooPage() {
       
       setConsultantResult(data)
       toast.success(`Consultoras importadas: ${data.created} criadas, ${data.updated} atualizadas`)
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error importing consultants:', error)
-      setConsultantResult({ success: false, error: error.message })
-      toast.error('Erro ao importar consultoras: ' + error.message)
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
+      setConsultantResult({ success: false, error: errorMessage })
+      toast.error('Erro ao importar consultoras: ' + errorMessage)
     } finally {
       setImportingConsultants(false)
     }
@@ -134,7 +135,7 @@ export default function ImportOdooPage() {
                       <p>Total processado: {productResult.total}</p>
                       <p>Criados: {productResult.created}</p>
                       <p>Atualizados: {productResult.updated}</p>
-                      {productResult.errors > 0 && (
+                      {productResult.errors !== undefined && productResult.errors > 0 && (
                         <p className="text-red-600">Erros: {productResult.errors}</p>
                       )}
                     </div>
@@ -189,7 +190,7 @@ export default function ImportOdooPage() {
                       <p>Total processado: {consultantResult.total}</p>
                       <p>Criados: {consultantResult.created}</p>
                       <p>Atualizados: {consultantResult.updated}</p>
-                      {consultantResult.errors > 0 && (
+                      {consultantResult.errors !== undefined && consultantResult.errors > 0 && (
                         <p className="text-red-600">Erros: {consultantResult.errors}</p>
                       )}
                     </div>
