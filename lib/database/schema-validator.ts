@@ -16,8 +16,6 @@ export const tableSchemas = {
       'metadata',
       'created_at',
       'updated_at',
-      'status',
-      'main_image_url',
       'odoo_image',
       'last_stock_update',
       'import_date',

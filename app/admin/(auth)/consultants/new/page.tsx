@@ -10,13 +10,17 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { PostalCodeInput } from "@/components/forms/postal-code-input"
 import { toast } from "sonner"
-import { ArrowLeft, Calendar } from "lucide-react"
+import { ArrowLeft, Calendar, Upload, X } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 
 export default function NewConsultantPage() {
   const router = useRouter()
   const supabase = createClient()
   const [loading, setLoading] = useState(false)
+  const [photoFile, setPhotoFile] = useState<File | null>(null)
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [formData, setFormData] = useState({
     full_name: "",
     email: "",
@@ -61,6 +65,18 @@ export default function NewConsultantPage() {
 
       if (!response.ok) {
         throw new Error(data.error || 'Erro ao criar consultora')
+      }
+
+      // Upload photo if exists
+      if (photoFile && data.consultant?.id) {
+        const photoUrl = await uploadPhoto(data.consultant.id)
+        if (photoUrl) {
+          // Update consultant with photo URL
+          await supabase
+            .from('consultants')
+            .update({ profile_image_url: photoUrl })
+            .eq('id', data.consultant.id)
+        }
       }
 
       if (data.message) {
@@ -112,6 +128,59 @@ export default function NewConsultantPage() {
     toast.success('Endereço preenchido automaticamente!')
   }
 
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('A foto deve ter no máximo 5MB')
+        return
+      }
+      
+      setPhotoFile(file)
+      
+      // Create preview
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const removePhoto = () => {
+    setPhotoFile(null)
+    setPhotoPreview(null)
+  }
+
+  const uploadPhoto = async (consultantId: string): Promise<string | null> => {
+    if (!photoFile) return null
+    
+    try {
+      setUploadingPhoto(true)
+      const fileExt = photoFile.name.split('.').pop()
+      const fileName = `${consultantId}-${Date.now()}.${fileExt}`
+      const filePath = `consultant-profiles/${fileName}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('consultant-profiles')
+        .upload(filePath, photoFile)
+
+      if (uploadError) throw uploadError
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('consultant-profiles')
+        .getPublicUrl(filePath)
+
+      return publicUrl
+    } catch (error) {
+      console.error('Error uploading photo:', error)
+      toast.error('Erro ao fazer upload da foto')
+      return null
+    } finally {
+      setUploadingPhoto(false)
+    }
+  }
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData(prev => ({
       ...prev,
@@ -139,6 +208,59 @@ export default function NewConsultantPage() {
               <CardDescription>Dados pessoais da consultora</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4">
+              {/* Photo Upload */}
+              <div className="space-y-2">
+                <Label>Foto de Perfil</Label>
+                <div className="flex items-center gap-4">
+                  {photoPreview ? (
+                    <div className="relative">
+                      <div className="h-24 w-24 rounded-full overflow-hidden border-2 border-gray-200">
+                        <Image
+                          src={photoPreview}
+                          alt="Preview"
+                          width={96}
+                          height={96}
+                          className="object-cover"
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute -top-2 -right-2 h-6 w-6"
+                        onClick={removePhoto}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="h-24 w-24 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center">
+                      <Upload className="h-8 w-8 text-gray-400" />
+                    </div>
+                  )}
+                  <div>
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoSelect}
+                      className="hidden"
+                      id="photo-upload"
+                    />
+                    <Label htmlFor="photo-upload" className="cursor-pointer">
+                      <Button type="button" variant="outline" size="sm" asChild>
+                        <span>
+                          <Upload className="h-4 w-4 mr-2" />
+                          {photoPreview ? 'Alterar Foto' : 'Escolher Foto'}
+                        </span>
+                      </Button>
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      JPG, PNG ou GIF. Máx 5MB.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="full_name">Nome Completo *</Label>

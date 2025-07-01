@@ -66,7 +66,6 @@ interface Product {
   stock_quantity: number
   featured: boolean
   active: boolean
-  main_image_url: string | null
   odoo_image: string | null
   odoo_id: number | null
   created_at: string
@@ -143,7 +142,6 @@ export default function ProductsPage() {
           stock_quantity,
           featured,
           active,
-          main_image_url,
           odoo_image,
           odoo_id,
           created_at,
@@ -239,11 +237,7 @@ export default function ProductsPage() {
   }
 
   const getProductImage = (product: Product) => {
-    // Priority: main_image_url > odoo_image
-    if (product.main_image_url) {
-      return product.main_image_url
-    }
-    
+    // Use odoo_image if available
     if (product.odoo_image) {
       return `data:image/jpeg;base64,${product.odoo_image}`
     }

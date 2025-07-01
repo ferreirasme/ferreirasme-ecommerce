@@ -70,35 +70,30 @@ export default function EditConsultantPage({ params }: { params: Promise<{ id: s
   const [saving, setSaving] = useState(false)
   const [consultant, setConsultant] = useState<ConsultantData | null>(null)
   const [activeTab, setActiveTab] = useState("personal")
-  const [consultantId, setConsultantId] = useState<string | null>(null)
 
   useEffect(() => {
-    params.then(p => setConsultantId(p.id))
-  }, [params])
+    const loadConsultant = async () => {
+      try {
+        const { id } = await params
+        
+        const { data, error } = await supabase
+          .from('consultants')
+          .select('*')
+          .eq('id', id)
+          .single()
 
-  useEffect(() => {
-    if (consultantId) {
-      fetchConsultant()
+        if (error) throw error
+        setConsultant(data)
+      } catch (error) {
+        console.error('Error fetching consultant:', error)
+        toast.error('Erro ao carregar consultora')
+      } finally {
+        setLoading(false)
+      }
     }
-  }, [consultantId])
-
-  const fetchConsultant = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('consultants')
-        .select('*')
-        .eq('id', consultantId)
-        .single()
-
-      if (error) throw error
-      setConsultant(data)
-    } catch (error) {
-      console.error('Error fetching consultant:', error)
-      toast.error('Erro ao carregar consultora')
-    } finally {
-      setLoading(false)
-    }
-  }
+    
+    loadConsultant()
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -131,12 +126,12 @@ export default function EditConsultantPage({ params }: { params: Promise<{ id: s
           notes: consultant.notes,
           updated_at: new Date().toISOString()
         })
-        .eq('id', consultantId)
+        .eq('id', consultant.id)
 
       if (error) throw error
 
       toast.success('Consultora atualizada com sucesso!')
-      router.push(`/admin/consultants/${consultantId}`)
+      router.push(`/admin/consultants/${consultant.id}`)
     } catch (error) {
       console.error('Error updating consultant:', error)
       toast.error('Erro ao atualizar consultora')
@@ -173,7 +168,7 @@ export default function EditConsultantPage({ params }: { params: Promise<{ id: s
           status: newStatus,
           updated_at: new Date().toISOString()
         })
-        .eq('id', consultantId)
+        .eq('id', consultant.id)
 
       if (error) throw error
 
@@ -196,7 +191,7 @@ export default function EditConsultantPage({ params }: { params: Promise<{ id: s
     <div className="container mx-auto p-6">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
-          <Link href={`/admin/consultants/${consultantId}`}>
+          <Link href={`/admin/consultants/${consultant.id}`}>
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-4 w-4" />
             </Button>
@@ -564,7 +559,7 @@ export default function EditConsultantPage({ params }: { params: Promise<{ id: s
             </Button>
           </div>
           <div className="flex gap-2">
-            <Link href={`/admin/consultants/${consultantId}`}>
+            <Link href={`/admin/consultants/${consultant.id}`}>
               <Button variant="outline">Cancelar</Button>
             </Link>
             <Button type="submit" disabled={saving}>
