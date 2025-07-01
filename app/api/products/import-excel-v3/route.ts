@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create product with only the fields that definitely exist
-    const productData = {
+    const productData: any = {
       name,
       slug: finalSlug,
       sku,
